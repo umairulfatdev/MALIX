@@ -1,0 +1,605 @@
+// ============================================================
+// MALIX STREAMING PLATFORM — Complete Prisma Schema
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ContentType {
+  MOVIE
+  DRAMA
+  SERIES
+  ANIME
+  DOCUMENTARY
+  SHORT_FILM
+  TRAILER
+}
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NotificationType {
+  NEW_CONTENT
+  NEW_EPISODE
+  ANNOUNCEMENT
+  ACCOUNT
+  SYSTEM
+}
+
+// ============================================================
+// 1. USER
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  avatarUrl     String?
+  role          Role     @default(USER)
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  profile         Profile?
+  watchlist       Watchlist[]
+  watchHistory    WatchHistory[]
+  watchProgress   WatchProgress[]
+  ratings         Rating[]
+  reviews         Review[]
+  downloads       DownloadHistory[]
+  notifications   Notification[]
+  sessions        Session[]
+
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  bio       String?  @db.Text
+  country   String?
+  language  String?  @default("en")
+  preferences Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================================
+// 2. CONTENT
+// ============================================================
+
+model Content {
+  id            String        @id @default(cuid())
+  title         String
+  slug          String        @unique
+  description   String        @db.Text
+  shortDesc     String?       @db.VarChar(500)
+  type          ContentType
+  releaseYear   Int?
+  language      String?
+  country       String?
+  duration      Int?
+  posterUrl     String?
+  backdropUrl   String?
+  trailerUrl    String?
+  avgRating     Float?        @default(0)
+  totalRatings  Int           @default(0)
+  totalViews    Int           @default(0)
+  totalDownloads Int          @default(0)
+  downloadEnabled Boolean     @default(false)
+  status        PublishStatus @default(DRAFT)
+  isFeatured    Boolean       @default(false)
+  isTrending    Boolean       @default(false)
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  movie  Movie?
+  drama  Drama?
+  series Series?
+
+  genres       Genre[]
+  casts        ContentCast[]
+  videoSources VideoSource[]
+  downloadOptions DownloadOption[]
+  watchlist    Watchlist[]
+  history      WatchHistory[]
+  progress     WatchProgress[]
+  ratings      Rating[]
+  reviews      Review[]
+  downloads    DownloadHistory[]
+  featured     FeaturedContent[]
+
+  @@index([type])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([isTrending])
+  @@index([title])
+  @@index([releaseYear])
+  @@index([avgRating])
+  @@index([createdAt])
+}
+
+// ============================================================
+// 3. MOVIE
+// ============================================================
+
+model Movie {
+  id          String   @id @default(cuid())
+  contentId   String   @unique
+  directorId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  content     Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  director    Director?    @relation(fields: [directorId], references: [id], onDelete: SetNull)
+  movieGenres MovieGenre[]
+
+  @@index([directorId])
+}
+
+// ============================================================
+// 4. DRAMA
+// ============================================================
+
+model Drama {
+  id          String   @id @default(cuid())
+  contentId   String   @unique
+  directorId  String?
+  totalEps    Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  content     Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  director    Director?    @relation(fields: [directorId], references: [id], onDelete: SetNull)
+  dramaGenres DramaGenre[]
+  episodes    Episode[]
+
+  @@index([directorId])
+}
+
+// ============================================================
+// 5. SERIES
+// ============================================================
+
+model Series {
+  id          String   @id @default(cuid())
+  contentId   String   @unique
+  directorId  String?
+  totalSeasons Int     @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  content      Content       @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  director     Director?     @relation(fields: [directorId], references: [id], onDelete: SetNull)
+  seriesGenres SeriesGenre[]
+  seasons      Season[]
+
+  @@index([directorId])
+}
+
+// ============================================================
+// 6. SEASON
+// ============================================================
+
+model Season {
+  id           String   @id @default(cuid())
+  seriesId     String
+  seasonNumber Int
+  title        String?
+  description  String?  @db.Text
+  posterUrl    String?
+  releaseYear  Int?
+  status       PublishStatus @default(PUBLISHED)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  series   Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodes Episode[]
+
+  @@unique([seriesId, seasonNumber])
+  @@index([seriesId])
+}
+
+// ============================================================
+// 7. EPISODE
+// ============================================================
+
+model Episode {
+  id            String        @id @default(cuid())
+  seasonId      String?
+  dramaId       String?
+  episodeNum    Int
+  title         String
+  description   String?       @db.Text
+  thumbnailUrl  String?
+  duration      Int?
+  videoUrl      String?
+  trailerUrl    String?
+  airDate       DateTime?
+  status        PublishStatus @default(DRAFT)
+  totalViews    Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  season       Season?        @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  drama        Drama?         @relation(fields: [dramaId], references: [id], onDelete: Cascade)
+  watchHistory WatchHistory[]
+  progress     WatchProgress[]
+  downloads    DownloadHistory[]
+
+  @@index([seasonId])
+  @@index([dramaId])
+  @@index([status])
+}
+
+// ============================================================
+// 8. GENRE
+// ============================================================
+
+model Genre {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contents     Content[]
+  movieGenres  MovieGenre[]
+  dramaGenres  DramaGenre[]
+  seriesGenres SeriesGenre[]
+
+  @@index([slug])
+}
+
+model MovieGenre {
+  movieId String
+  genreId String
+  movie   Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre   Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+}
+
+model DramaGenre {
+  dramaId String
+  genreId String
+  drama   Drama @relation(fields: [dramaId], references: [id], onDelete: Cascade)
+  genre   Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([dramaId, genreId])
+}
+
+model SeriesGenre {
+  seriesId String
+  genreId  String
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([seriesId, genreId])
+}
+
+// ============================================================
+// 9. CAST MEMBER
+// ============================================================
+
+model CastMember {
+  id        String   @id @default(cuid())
+  name      String
+  photoUrl  String?
+  bio       String?  @db.Text
+  birthDate DateTime?
+  country   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contentCast ContentCast[]
+
+  @@index([name])
+}
+
+model ContentCast {
+  id           String @id @default(cuid())
+  contentId    String
+  castMemberId String
+  characterName String?
+  roleType     String?
+  order        Int    @default(0)
+
+  content    Content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  castMember CastMember @relation(fields: [castMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, castMemberId])
+  @@index([contentId])
+  @@index([castMemberId])
+}
+
+// ============================================================
+// 10. DIRECTOR
+// ============================================================
+
+model Director {
+  id        String   @id @default(cuid())
+  name      String
+  photoUrl  String?
+  bio       String?  @db.Text
+  birthDate DateTime?
+  country   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movies Movie[]
+  dramas Drama[]
+  series Series[]
+
+  @@index([name])
+}
+
+// ============================================================
+// 11. VIDEO SOURCE
+// ============================================================
+
+model VideoSource {
+  id         String   @id @default(cuid())
+  contentId  String
+  episodeId  String?
+  url        String   @db.Text
+  quality    String?
+  type       String?  @default("mp4")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([episodeId])
+}
+
+// ============================================================
+// 12. DOWNLOAD OPTION
+// ============================================================
+
+model DownloadOption {
+  id           String   @id @default(cuid())
+  contentId    String
+  episodeId    String?
+  quality      String
+  fileUrl      String   @db.Text
+  fileSize     BigInt?
+  format       String?  @default("mp4")
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  content      Content           @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  downloads    DownloadHistory[]
+
+  @@index([contentId])
+  @@index([episodeId])
+  @@index([quality])
+}
+
+// ============================================================
+// 13. DOWNLOAD HISTORY
+// ============================================================
+
+model DownloadHistory {
+  id               String   @id @default(cuid())
+  userId           String
+  contentId        String
+  episodeId        String?
+  downloadOptionId String?
+  quality          String
+  fileSize         BigInt?
+  status           String   @default("completed")
+  ipAddress        String?
+  createdAt        DateTime @default(now())
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content        Content         @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  episode        Episode?        @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  downloadOption DownloadOption? @relation(fields: [downloadOptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([contentId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// 14. WATCHLIST
+// ============================================================
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// 15. WATCH HISTORY
+// ============================================================
+
+model WatchHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  contentId   String
+  episodeId   String?
+  progress    Float    @default(0)
+  position    Int      @default(0)
+  duration    Int      @default(0)
+  isCompleted Boolean  @default(false)
+  lastWatched DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  episode Episode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, contentId, episodeId])
+  @@index([userId])
+  @@index([lastWatched])
+}
+
+// ============================================================
+// 16. WATCH PROGRESS
+// ============================================================
+
+model WatchProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  contentId   String
+  episodeId   String?
+  position    Int      @default(0)
+  duration    Int      @default(0)
+  percentage  Float    @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  episode Episode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, contentId, episodeId])
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+// ============================================================
+// 17. RATING
+// ============================================================
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  score     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@index([contentId])
+  @@index([score])
+}
+
+// ============================================================
+// 18. REVIEW
+// ============================================================
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  title     String?
+  body      String   @db.Text
+  isHidden  Boolean  @default(false)
+  isReported Boolean @default(false)
+  reportReason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+@@unique([userId, contentId])
+  @@index([contentId])
+  @@index([userId])
+  @@index([isHidden])
+}
+
+// ============================================================
+// 19. FEATURED CONTENT
+// ============================================================
+
+model FeaturedContent {
+  id         String   @id @default(cuid())
+  contentId  String
+  section    String
+  position   Int      @default(0)
+  startDate  DateTime?
+  endDate    DateTime?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([section])
+  @@index([isActive])
+  @@index([position])
+}
+
+// ============================================================
+// 20. NOTIFICATION
+// ============================================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  linkUrl   String?
+  imageUrl  String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
