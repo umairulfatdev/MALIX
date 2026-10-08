@@ -10,17 +10,17 @@ import { MovieFilters } from "@/components/content/movie-filters";
 import { Pagination } from "@/components/content/pagination";
 import { EmptyState } from "@/components/content/empty-state";
 
-// ✅ Type define karein — koi 'any' nahi
+// ✅ Type define karein
 type SortOption =
   | "latest"
   | "oldest"
   | "popular"
   | "rating"
   | "az"
-  | "za";
+  | "za"
+  | "top-rated";
 
 interface MoviesPageProps {
-  // ✅ Next.js 15: searchParams is now a Promise
   searchParams: Promise<{
     search?: string;
     genre?: string | string[];
@@ -38,10 +38,8 @@ export const metadata = {
 };
 
 export default async function MoviesPage({ searchParams }: MoviesPageProps) {
-  // ✅ Await searchParams — Next.js 15 requirement
   const params = await searchParams;
 
-  // Parse search params
   const search = params.search || "";
   const genres = Array.isArray(params.genre)
     ? params.genre
@@ -51,11 +49,22 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
   const year = params.year ? parseInt(params.year) : undefined;
   const minRating = params.minRating ? parseInt(params.minRating) : undefined;
   const language = params.language || undefined;
-  // ✅ Type-safe cast (no 'any')
-  const sort = (params.sort as SortOption) || "latest";
+
+  // ✅ Type-safe sort mapping
+  const sortMap: Record<string, SortOption> = {
+    latest: "latest",
+    oldest: "oldest",
+    popular: "popular",
+    rating: "rating",
+    "top-rated": "top-rated",
+    az: "az",
+    za: "za",
+  };
+  const rawSort = params.sort || "latest";
+  const sort: SortOption = sortMap[rawSort] || "latest";
+
   const page = params.page ? parseInt(params.page) : 1;
 
-  // Fetch data (server-side, in parallel)
   const [moviesResult, allGenres, allLanguages, allYears] = await Promise.all([
     getMovies({
       search,

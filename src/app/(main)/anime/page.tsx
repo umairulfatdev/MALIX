@@ -16,7 +16,8 @@ type SortOption =
   | "popular"
   | "rating"
   | "az"
-  | "za";
+  | "za"
+  | "top-rated";
 
 interface AnimePageProps {
   searchParams: Promise<{
@@ -47,7 +48,19 @@ export default async function AnimePage({ searchParams }: AnimePageProps) {
   const year = params.year ? parseInt(params.year) : undefined;
   const minRating = params.minRating ? parseInt(params.minRating) : undefined;
   const language = params.language || undefined;
-  const sort = (params.sort as SortOption) || "latest";
+
+  const sortMap: Record<string, SortOption> = {
+    latest: "latest",
+    oldest: "oldest",
+    popular: "popular",
+    rating: "rating",
+    "top-rated": "top-rated",
+    az: "az",
+    za: "za",
+  };
+  const rawSort = params.sort || "latest";
+  const sort: SortOption = sortMap[rawSort] || "latest";
+
   const page = params.page ? parseInt(params.page) : 1;
 
   const [animeResult, allGenres, allLanguages, allYears] = await Promise.all([
@@ -68,7 +81,6 @@ export default async function AnimePage({ searchParams }: AnimePageProps) {
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-12">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full shadow-lg shadow-yellow-500/50" />
@@ -92,7 +104,6 @@ export default async function AnimePage({ searchParams }: AnimePageProps) {
         </p>
       </div>
 
-      {/* Filters */}
       <Suspense fallback={<div className="h-20" />}>
         <AnimeFilters
           genres={allGenres}
@@ -109,7 +120,6 @@ export default async function AnimePage({ searchParams }: AnimePageProps) {
         />
       </Suspense>
 
-      {/* Results */}
       <div className="mt-8">
         {animeResult.anime.length === 0 ? (
           <EmptyState

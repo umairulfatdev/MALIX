@@ -10,14 +10,15 @@ import { SeriesFilters } from "@/components/content/series-filters";
 import { Pagination } from "@/components/content/pagination";
 import { EmptyState } from "@/components/content/empty-state";
 
-// ✅ Type define karein — koi 'any' nahi
+// ✅ Type define karein
 type SortOption =
   | "latest"
   | "oldest"
   | "popular"
   | "rating"
   | "az"
-  | "za";
+  | "za"
+  | "top-rated";
 
 interface SeriesPageProps {
   searchParams: Promise<{
@@ -48,8 +49,20 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
   const year = params.year ? parseInt(params.year) : undefined;
   const minRating = params.minRating ? parseInt(params.minRating) : undefined;
   const language = params.language || undefined;
-  // ✅ Type-safe cast (no 'any')
-  const sort = (params.sort as SortOption) || "latest";
+
+  // ✅ Type-safe sort mapping
+  const sortMap: Record<string, SortOption> = {
+    latest: "latest",
+    oldest: "oldest",
+    popular: "popular",
+    rating: "rating",
+    "top-rated": "top-rated",
+    az: "az",
+    za: "za",
+  };
+  const rawSort = params.sort || "latest";
+  const sort: SortOption = sortMap[rawSort] || "latest";
+
   const page = params.page ? parseInt(params.page) : 1;
 
   const [seriesResult, allGenres, allLanguages, allYears] = await Promise.all([

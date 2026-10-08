@@ -11,14 +11,15 @@ import { DramaFilters } from "@/components/content/drama-filters";
 import { Pagination } from "@/components/content/pagination";
 import { EmptyState } from "@/components/content/empty-state";
 
-// ✅ Type define karein — koi 'any' nahi
+// ✅ Type define karein
 type SortOption =
   | "latest"
   | "oldest"
   | "popular"
   | "rating"
   | "az"
-  | "za";
+  | "za"
+  | "top-rated";
 
 interface DramasPageProps {
   searchParams: Promise<{
@@ -39,7 +40,6 @@ export const metadata = {
 };
 
 export default async function DramasPage({ searchParams }: DramasPageProps) {
-  // ✅ Await searchParams — Next.js 15 requirement
   const params = await searchParams;
 
   const search = params.search || "";
@@ -52,8 +52,20 @@ export default async function DramasPage({ searchParams }: DramasPageProps) {
   const language = params.language || undefined;
   const year = params.year ? parseInt(params.year) : undefined;
   const minRating = params.minRating ? parseInt(params.minRating) : undefined;
-  // ✅ Type-safe cast (no 'any')
-  const sort = (params.sort as SortOption) || "latest";
+
+  // ✅ Type-safe sort mapping
+  const sortMap: Record<string, SortOption> = {
+    latest: "latest",
+    oldest: "oldest",
+    popular: "popular",
+    rating: "rating",
+    "top-rated": "top-rated",
+    az: "az",
+    za: "za",
+  };
+  const rawSort = params.sort || "latest";
+  const sort: SortOption = sortMap[rawSort] || "latest";
+
   const page = params.page ? parseInt(params.page) : 1;
 
   const [dramasResult, countries, languages, years, allGenres] =

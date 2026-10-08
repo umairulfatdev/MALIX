@@ -3,7 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 
-type SortOption = "latest" | "oldest" | "popular" | "rating" | "az" | "za";
+type SortOption =
+  | "latest"
+  | "oldest"
+  | "popular"
+  | "rating"
+  | "az"
+  | "za"
+  | "top-rated";
 
 export async function getAnime(params: {
   search?: string;
@@ -59,7 +66,8 @@ export async function getAnime(params: {
     case "popular":
       orderBy = { totalViews: "desc" };
       break;
-    case "rating":
+        case "rating":
+    case "top-rated":
       orderBy = { avgRating: "desc" };
       break;
     case "az":

@@ -9,7 +9,14 @@ export interface MovieFilters {
   year?: number;
   minRating?: number;
   language?: string;
-  sort?: "latest" | "popular" | "top-rated" | "az" | "za";
+  sort?:
+  | "latest"
+  | "oldest"
+  | "popular"
+  | "rating"
+  | "top-rated"
+  | "az"
+  | "za";
   page?: number;
   perPage?: number;
 }
@@ -88,25 +95,29 @@ export async function getMovies(
   }
 
   // Sort
-  let orderBy: Prisma.ContentOrderByWithRelationInput;
-  switch (sort) {
-    case "popular":
-      orderBy = { totalViews: "desc" };
-      break;
-    case "top-rated":
-      orderBy = { avgRating: "desc" };
-      break;
-    case "az":
-      orderBy = { title: "asc" };
-      break;
-    case "za":
-      orderBy = { title: "desc" };
-      break;
-    case "latest":
-    default:
-      orderBy = { createdAt: "desc" };
-      break;
-  }
+  let orderBy: Prisma.ContentOrderByWithRelationInput;switch (sort) {
+  case "latest":
+    orderBy = { releaseYear: "desc" };
+    break;
+  case "oldest":
+    orderBy = { releaseYear: "asc" };
+    break;
+  case "popular":
+    orderBy = { totalViews: "desc" };
+    break;
+  case "rating":
+  case "top-rated":
+    orderBy = { avgRating: "desc" };
+    break;
+  case "az":
+    orderBy = { title: "asc" };
+    break;
+  case "za":
+    orderBy = { title: "desc" };
+    break;
+  default:
+    orderBy = { createdAt: "desc" };
+}
 
   const skip = (page - 1) * perPage;
 

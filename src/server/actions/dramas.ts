@@ -10,7 +10,7 @@ export interface DramaFilters {
   language?: string;
   year?: number;
   minRating?: number;
-  sort?: "latest" | "popular" | "top-rated" | "az" | "za";
+  sort?: "latest" | "popular" | "az" | "za" | "top-rated" | "rating" | "oldest";
   page?: number;
   perPage?: number;
 }
