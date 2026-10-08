@@ -17,6 +17,9 @@ import { RatingSummary } from "@/components/content/rating-summary";
 import { ReviewForm } from "@/components/content/review-form";
 import { ReviewsList } from "@/components/content/reviews-list";
 
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -39,7 +42,6 @@ export default async function ContentDetailPage({ params }: Props) {
     notFound();
   }
 
-  // Fetch in parallel
   const [downloadOptions, user, ratingStats, userRating, reviews, userReview] =
     await Promise.all([
       getDownloadOptions(content.id),
@@ -63,7 +65,6 @@ export default async function ContentDetailPage({ params }: Props) {
 
   return (
     <div className="pb-16">
-      {/* ============ HERO ============ */}
       <section className="relative">
         <div className="relative h-[60vh] min-h-[500px] overflow-hidden">
           {content.backdropUrl ? (
@@ -82,7 +83,6 @@ export default async function ContentDetailPage({ params }: Props) {
 
         <div className="relative max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 -mt-64 md:-mt-80 z-10">
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Poster */}
             <div className="w-48 md:w-64 flex-shrink-0 mx-auto md:mx-0">
               <div className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-zinc-900 ring-1 ring-white/10 shadow-2xl shadow-yellow-500/10">
                 {content.posterUrl ? (
@@ -102,7 +102,6 @@ export default async function ContentDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Info */}
             <div className="flex-1 pt-4 md:pt-24">
               <div className="inline-flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/40 px-3 py-1 rounded-full mb-4">
                 <span className="text-xs font-bold text-yellow-500 tracking-cinematic uppercase">
@@ -185,7 +184,6 @@ export default async function ContentDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* ============ RATING SECTION ============ */}
       <section className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 mt-16">
         <div className="flex items-baseline gap-3 mb-6">
           <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full" />
@@ -202,7 +200,6 @@ export default async function ContentDetailPage({ params }: Props) {
         />
       </section>
 
-      {/* ============ SEASONS + EPISODES ============ */}
       {content.seasons && content.seasons.length > 0 && (
         <section className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 mt-16">
           <div className="flex items-baseline gap-3 mb-6">
@@ -222,7 +219,6 @@ export default async function ContentDetailPage({ params }: Props) {
         </section>
       )}
 
-      {/* ============ REVIEWS SECTION ============ */}
       <section className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 mt-16">
         <div className="flex items-baseline gap-3 mb-6">
           <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full" />
@@ -236,7 +232,6 @@ export default async function ContentDetailPage({ params }: Props) {
         </div>
 
         <div className="space-y-6">
-          {/* Review Form (if logged in) */}
           {user ? (
             <ReviewForm
               contentId={content.id}
@@ -264,12 +259,10 @@ export default async function ContentDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Reviews List */}
           <ReviewsList reviews={reviews} currentUserId={user?.id} />
         </div>
       </section>
 
-      {/* ============ RELATED ============ */}
       {content.related.length > 0 && (
         <section className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 mt-20">
           <div className="flex items-baseline gap-3 mb-8">

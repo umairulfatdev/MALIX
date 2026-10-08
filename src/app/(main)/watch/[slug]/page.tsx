@@ -1,9 +1,12 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Play, Clock, Download } from "lucide-react";
+import { notFound } from "next/navigation";
+import { Star, Clock, Calendar, ArrowLeft } from "lucide-react";
 import { getWatchContent } from "@/server/actions/watch";
 import { EpisodeNav } from "@/components/player/episode-nav";
 import { WatchClient } from "./watch-client";
+
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -29,7 +32,6 @@ export default async function WatchPage({ params, searchParams }: Props) {
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-8">
-      {/* Back button */}
       <Link
         href={`/content/${content.slug}`}
         className="inline-flex items-center gap-2 text-zinc-400 hover:text-yellow-500 transition-colors mb-4 text-sm"
@@ -38,10 +40,8 @@ export default async function WatchPage({ params, searchParams }: Props) {
         Back to Details
       </Link>
 
-      {/* Player */}
       <WatchClient content={content} />
 
-      {/* Episode Nav (for series) */}
       {isSeries && (
         <EpisodeNav
           slug={content.slug}
@@ -52,9 +52,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
         />
       )}
 
-      {/* Info */}
       <div className="mt-6 md:mt-8">
-        {/* Title */}
         <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white mb-3">
           {content.title}
           {isSeries && content.episodeTitle && (
@@ -65,7 +63,6 @@ export default async function WatchPage({ params, searchParams }: Props) {
           )}
         </h1>
 
-        {/* Meta */}
         <div className="flex items-center flex-wrap gap-3 md:gap-4 mb-6 text-sm">
           {content.avgRating && content.avgRating > 0 && (
             <div className="flex items-center gap-1.5">
@@ -92,7 +89,6 @@ export default async function WatchPage({ params, searchParams }: Props) {
           )}
         </div>
 
-        {/* Genres */}
         {content.genres.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             {content.genres.map((g) => (
@@ -106,7 +102,6 @@ export default async function WatchPage({ params, searchParams }: Props) {
           </div>
         )}
 
-        {/* Description */}
         <p className="text-zinc-300 text-base leading-relaxed max-w-3xl">
           {isSeries && content.episodeDescription
             ? content.episodeDescription

@@ -5,6 +5,8 @@ import {
   getAllGenresForAdmin,
 } from "@/server/actions/admin/content";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Edit Movie",
 };

@@ -6,7 +6,11 @@ import {
   getAllGenresForAnimeAdmin,
 } from "@/server/actions/admin/anime";
 
-export const metadata = { title: "Edit Anime" };
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Edit Anime",
+};
 
 interface Props {
   params: Promise<{ id: string }>;

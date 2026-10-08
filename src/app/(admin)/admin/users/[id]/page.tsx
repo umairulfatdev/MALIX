@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { getAdminUserDetails } from "@/server/actions/admin/users";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = { title: "User Details" };
 
 interface Props {
@@ -46,7 +48,6 @@ export default async function UserDetailsPage({ params }: Props) {
 
   return (
     <div className="space-y-6 max-w-[1200px]">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link
           href="/admin/users"
@@ -60,7 +61,6 @@ export default async function UserDetailsPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Profile Card */}
       <div className="glass-cosmic rounded-2xl p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start gap-6">
           {user.avatarUrl ? (
@@ -139,7 +139,6 @@ export default async function UserDetailsPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Activity Stats */}
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-400 mb-4">
           Activity Summary

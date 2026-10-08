@@ -5,7 +5,11 @@ import {
   getAllGenresForDramaAdmin,
 } from "@/server/actions/admin/dramas";
 
-export const metadata = { title: "Edit Drama" };
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Edit Drama",
+};
 
 interface Props {
   params: Promise<{ id: string }>;

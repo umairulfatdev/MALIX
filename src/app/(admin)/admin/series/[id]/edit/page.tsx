@@ -6,7 +6,11 @@ import {
   getAllGenresForSeriesAdmin,
 } from "@/server/actions/admin/series";
 
-export const metadata = { title: "Edit Series" };
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Edit Series",
+};
 
 interface Props {
   params: Promise<{ id: string }>;
