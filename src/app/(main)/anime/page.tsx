@@ -10,6 +10,9 @@ import { ContentCard } from "@/components/content/content-card";
 import { EmptyState } from "@/components/content/empty-state";
 import { AnimeFilters } from "@/components/content/anime-filters";
 
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
 type SortOption =
   | "latest"
   | "oldest"
