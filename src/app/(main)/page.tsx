@@ -4,6 +4,10 @@ import { ContinueWatchingRow } from "@/components/content/continue-watching-row"
 import { FloatingPlanet } from "@/components/effects/floating-planet";
 import { getContinueWatching } from "@/server/actions/history";
 
+// ✅ Force dynamic — skip build-time DB queries
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
 const SAMPLE_DATA = {
   movies: [
     { id: "1", title: "The Dark Horizon", slug: "the-dark-horizon", posterUrl: null, releaseYear: 2024, avgRating: 8.5, type: "MOVIE" },
@@ -45,7 +49,14 @@ const HERO = {
 };
 
 export default async function HomePage() {
-  const continueWatching = await getContinueWatching(10);
+  // ✅ Safe fetch — agar DB connect nahi hua, crash nahi hoga
+  let continueWatching: any[] = [];
+  try {
+    continueWatching = await getContinueWatching(10);
+  } catch (error) {
+    console.warn("Continue watching fetch failed:", error);
+    continueWatching = [];
+  }
 
   return (
     <div className="pb-10">
