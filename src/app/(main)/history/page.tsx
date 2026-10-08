@@ -6,6 +6,8 @@ import { getWatchHistory, getHistoryStats } from "@/server/actions/history";
 import { HistoryCard } from "@/components/history/history-card";
 import { ClearHistoryButton } from "@/components/history/clear-history-button";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Watch History",
   description: "Your watch history on MALIX",
@@ -25,7 +27,6 @@ export default async function HistoryPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-12">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
           <div className="flex items-center gap-3 mb-3">
@@ -55,7 +56,6 @@ export default async function HistoryPage() {
         {history.length > 0 && <ClearHistoryButton />}
       </div>
 
-      {/* Stats */}
       {stats && history.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-10 max-w-2xl">
           <div className="glass-cosmic rounded-xl p-4">
@@ -94,7 +94,6 @@ export default async function HistoryPage() {
         </div>
       )}
 
-      {/* Content */}
       {history.length === 0 ? (
         <EmptyHistory />
       ) : (
@@ -123,7 +122,7 @@ function EmptyHistory() {
       </h3>
       <p className="text-zinc-400 text-sm md:text-base max-w-md mb-8">
         Start watching movies, dramas, and series. Your history will appear
-        here to help you pick up where you left off.
+        here.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">

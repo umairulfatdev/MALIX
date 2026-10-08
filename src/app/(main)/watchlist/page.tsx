@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { getUserWatchlist } from "@/server/actions/watchlist";
 import { WatchlistCard } from "@/components/content/watchlist-card";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "My Watchlist",
   description: "Your saved content on MALIX",
@@ -21,7 +23,6 @@ export default async function WatchlistPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-12">
-      {/* Header */}
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full shadow-lg shadow-yellow-500/50" />
@@ -47,7 +48,6 @@ export default async function WatchlistPage() {
         </p>
       </div>
 
-      {/* Content */}
       {watchlist.length === 0 ? (
         <EmptyWatchlist />
       ) : (
@@ -75,8 +75,7 @@ function EmptyWatchlist() {
         Your watchlist is empty
       </h3>
       <p className="text-zinc-400 text-sm md:text-base max-w-md mb-8">
-        Start saving movies, dramas, and series to watch later. Your watchlist
-        will appear here.
+        Start saving movies, dramas, and series to watch later.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">

@@ -16,6 +16,8 @@ import { getProfileData } from "@/server/actions/profile";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { PasswordForm } from "@/components/profile/password-form";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Profile",
   description: "Your MALIX profile",
@@ -47,7 +49,6 @@ export default async function ProfilePage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-12">
-      {/* Header */}
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full shadow-lg shadow-yellow-500/50" />
@@ -72,9 +73,7 @@ export default async function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Profile Card */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Avatar + Info */}
           <div className="glass-cosmic rounded-2xl p-6">
             <div className="flex flex-col items-center text-center">
               {user.avatarUrl ? (
@@ -129,20 +128,19 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="glass-cosmic rounded-2xl p-5">
             <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4 pb-3 border-b border-white/5">
               Activity
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {statCards.map((stat) => {
-                const CardWrapper = stat.href ? Link : "div";
+                const CardWrapper: any = stat.href ? Link : "div";
                 const cardProps = stat.href ? { href: stat.href } : {};
 
                 return (
                   <CardWrapper
                     key={stat.label}
-                    {...(cardProps as any)}
+                    {...cardProps}
                     className={`rounded-xl p-3 border border-white/5 bg-white/5 ${
                       stat.href
                         ? "hover:bg-white/10 hover:border-yellow-500/20 cursor-pointer transition"
@@ -176,9 +174,7 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        {/* Right Column - Forms */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Edit Profile */}
           <div className="glass-cosmic rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-5 pb-3 border-b border-white/5">
               <div className="w-1 h-5 rounded-full bg-gradient-to-b from-yellow-400 to-amber-600" />
@@ -197,7 +193,6 @@ export default async function ProfilePage() {
             />
           </div>
 
-          {/* Change Password */}
           <div className="glass-cosmic rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-5 pb-3 border-b border-white/5">
               <div className="w-1 h-5 rounded-full bg-gradient-to-b from-yellow-400 to-amber-600" />
