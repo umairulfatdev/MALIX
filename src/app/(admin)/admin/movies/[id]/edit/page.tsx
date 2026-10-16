@@ -7,9 +7,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Edit Movie",
-};
+export const metadata = { title: "Edit Movie" };
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -44,6 +42,8 @@ export default async function EditMoviePage({ params }: Props) {
           posterUrl: movie.posterUrl,
           backdropUrl: movie.backdropUrl,
           trailerUrl: movie.trailerUrl,
+          videoUrl: movie.videoUrl,
+          downloadUrl: movie.downloadUrl,
           status: movie.status,
           isFeatured: movie.isFeatured,
           genres: movie.genres.map((g) => ({ id: g.id })),

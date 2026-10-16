@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Video } from "lucide-react";
 import {
   createMovieAction,
   updateMovieAction,
@@ -27,6 +27,8 @@ interface MovieData {
   posterUrl?: string | null;
   backdropUrl?: string | null;
   trailerUrl?: string | null;
+  videoUrl?: string | null;
+  downloadUrl?: string | null;
   status?: string;
   isFeatured?: boolean;
   genres?: { id: string }[];
@@ -75,21 +77,18 @@ export function MovieForm({
       ? updateMovieAction.bind(null, movieId)
       : createMovieAction;
 
-  // ✅ React 19: useActionState (not useFormState)
   const [state, formAction] = useActionState(action, initialState);
 
   const selectedGenres = initialData?.genres?.map((g) => g.id) || [];
 
   return (
     <form action={formAction} className="space-y-6 max-w-4xl">
-      {/* Error */}
       {state?.error && (
         <div className="bg-red-500/10 border border-red-500/40 text-red-400 text-sm rounded-xl p-4">
           {state.error}
         </div>
       )}
 
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -125,7 +124,7 @@ export function MovieForm({
           />
         </Field>
 
-        <Field label="Short Description" hint="Optional — shown in previews">
+        <Field label="Short Description">
           <input
             name="shortDesc"
             defaultValue={initialData?.shortDesc || ""}
@@ -143,7 +142,7 @@ export function MovieForm({
             minLength={10}
             rows={5}
             className="form-input resize-none"
-            placeholder="Full description of the movie..."
+            placeholder="Full description..."
           />
         </Field>
       </Section>
@@ -195,7 +194,62 @@ export function MovieForm({
         </Field>
       </Section>
 
-      {/* Media */}
+      {/* ⭐ VIDEO SECTION — YEH NAYA HAI */}
+      <Section title="🎬 Video Sources (Zaroori)">
+        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 mb-4">
+          <p className="text-xs text-yellow-400 font-semibold mb-2">
+            💡 VIDEO URL KAISE LAAYEIN:
+          </p>
+          <ul className="text-xs text-zinc-400 space-y-1 list-disc list-inside">
+            <li><strong>YouTube:</strong> https://www.youtube.com/embed/VIDEO_ID</li>
+            <li><strong>Vimeo:</strong> https://player.vimeo.com/video/VIDEO_ID</li>
+            <li><strong>MP4:</strong> https://example.com/movie.mp4</li>
+            <li><strong>Archive.org:</strong> https://archive.org/download/.../movie.mp4</li>
+          </ul>
+        </div>
+
+        <Field
+          label="Video URL (Streaming)"
+          hint="Yeh URL video player me chalega"
+          required
+        >
+          <div className="relative">
+            <Video
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500"
+            />
+            <input
+              name="videoUrl"
+              type="url"
+              defaultValue={initialData?.videoUrl || ""}
+              required
+              className="form-input pl-10"
+              placeholder="https://www.youtube.com/embed/VIDEO_ID"
+            />
+          </div>
+        </Field>
+
+        <Field
+          label="Download URL (Optional)"
+          hint="Agar download enable karna hai to MP4 URL daalein"
+        >
+          <div className="relative">
+            <Video
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"
+            />
+            <input
+              name="downloadUrl"
+              type="url"
+              defaultValue={initialData?.downloadUrl || ""}
+              className="form-input pl-10"
+              placeholder="https://example.com/movie.mp4"
+            />
+          </div>
+        </Field>
+      </Section>
+
+      {/* Media URLs */}
       <Section title="Media URLs">
         <Field label="Poster URL" hint="Vertical image (2:3 ratio)">
           <input
@@ -217,7 +271,7 @@ export function MovieForm({
           />
         </Field>
 
-        <Field label="Trailer URL" hint="YouTube or direct video link">
+        <Field label="Trailer URL">
           <input
             name="trailerUrl"
             type="url"
@@ -280,7 +334,6 @@ export function MovieForm({
         </div>
       </Section>
 
-      {/* Bottom Submit */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
         <Link
           href="/admin/movies"
@@ -291,7 +344,6 @@ export function MovieForm({
         <SubmitButton mode={mode} />
       </div>
 
-      {/* Global form styles */}
       <style jsx global>{`
         .form-input {
           width: 100%;

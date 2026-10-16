@@ -40,3 +40,13 @@ yarn-error.log*
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+
+# Temporary scripts
+add-videos.mjs
+fix-downloads.mjs
+fix-videos.ts
+reset-videos.mjs
+multi-cloudinary.mjs
+multi-upload.mjs
+sync-cloudinary.mjs
