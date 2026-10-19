@@ -28,6 +28,8 @@ export interface WatchContent {
     duration: number;
     percentage: number;
   } | null;
+  // 👇 NAYA: Downloads add kiye
+  downloadOptions?: { quality: string; fileUrl: string; format: string }[]; 
 }
 
 export async function getWatchContent(
@@ -52,6 +54,7 @@ export async function getWatchContent(
         where: { isDefault: true },
         take: 1,
       },
+      downloadOptions: true, // 👈 NAYA: Downloads fetch kiye
     },
   });
 
@@ -61,7 +64,6 @@ export async function getWatchContent(
 
   // ============ SERIES ============
   if (content.type === "SERIES" && content.series) {
-    // Find episode (either given or first)
     let foundEpisode: any = null;
     let foundSeason: any = null;
     const allEpisodes: any[] = [];
@@ -76,10 +78,8 @@ export async function getWatchContent(
       }
     }
 
-    // If no episodeId given, use first episode
     if (!foundEpisode && allEpisodes.length > 0) {
       const firstEpId = allEpisodes[0].id;
-      // Recursive call with first episode id
       return getWatchContent(slug, firstEpId);
     }
 
@@ -128,6 +128,7 @@ export async function getWatchContent(
       nextEpisodeId,
       prevEpisodeId,
       initialProgress,
+      downloadOptions: [], // Series ke liye filhal download nahi hai
     };
   }
 
@@ -166,6 +167,12 @@ export async function getWatchContent(
     videoUrl,
     genres: content.genres,
     initialProgress,
+    // 👇 NAYA: Downloads frontend ko bheje
+    downloadOptions: content.downloadOptions.map((d) => ({
+      quality: d.quality,
+      fileUrl: d.fileUrl,
+      format: d.format,
+    })),
   };
 }
 
@@ -214,14 +221,12 @@ export async function saveWatchProgress(
         },
       });
 
-      // Increment views only on new watch
       await prisma.content.update({
         where: { id: contentId },
         data: { totalViews: { increment: 1 } },
       });
     }
 
-    // Also update WatchProgress for Continue Watching
     const existingProgress = await prisma.watchProgress.findFirst({
       where: {
         userId: user.id,

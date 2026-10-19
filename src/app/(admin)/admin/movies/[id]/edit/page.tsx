@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma"; // 👈 NAYA: prisma import kiya
 import { MovieForm } from "@/components/admin/movie-form";
 import {
   getMovieForEdit,
@@ -15,9 +16,12 @@ interface Props {
 
 export default async function EditMoviePage({ params }: Props) {
   const { id } = await params;
-  const [movie, genres] = await Promise.all([
+  
+  // 👇 NAYA: Ab yahan drives bhi fetch honge
+  const [movie, genres, drives] = await Promise.all([
     getMovieForEdit(id),
     getAllGenresForAdmin(),
+    prisma.drive.findMany({ where: { isActive: true }, select: { id: true, name: true } })
   ]);
 
   if (!movie) {
@@ -30,6 +34,7 @@ export default async function EditMoviePage({ params }: Props) {
         mode="edit"
         movieId={movie.id}
         genres={genres}
+        drives={drives} // 👈 NAYA: Drives form ko bheje
         initialData={{
           id: movie.id,
           title: movie.title,
@@ -46,6 +51,7 @@ export default async function EditMoviePage({ params }: Props) {
           downloadUrl: movie.downloadUrl,
           status: movie.status,
           isFeatured: movie.isFeatured,
+          driveId: movie.driveId, // 👈 NAYA: Pehle se selected drive pass ki
           genres: movie.genres.map((g) => ({ id: g.id })),
         }}
       />

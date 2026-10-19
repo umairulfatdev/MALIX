@@ -1,142 +1,123 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface VideoPlayerProps {
-  src: string;
-  type?: string;
+  url?: string;
+  src?: string;
   poster?: string;
+  title?: string;
+  contentId?: string;
+  episodeId?: string | null;
+  initialPosition?: number;
   autoPlay?: boolean;
-  onProgress?: (position: number, duration: number) => void;
+  onProgressUpdate?: (position: number, duration: number) => void;
+  onEnded?: () => void;
 }
 
-export function VideoPlayer({
-  src,
-  type = "mp4",
-  poster,
-  autoPlay = false,
-  onProgress,
-}: VideoPlayerProps) {
+export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // ✅ Detect video type from URL
-  const detectType = (url: string): string => {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-    if (url.includes("vimeo.com")) return "vimeo";
-    if (url.includes("dailymotion.com")) return "dailymotion";
-    if (url.includes(".mp4") || url.includes(".webm") || url.includes(".m4v"))
-      return "mp4";
-    if (url.includes(".m3u8")) return "hls";
-    return type;
-  };
+  const rawUrl = url || src || "";
 
-  const actualType = detectType(src);
+  const getProcessedUrl = (originalUrl: string) => {
+    if (!originalUrl) return "";
 
-  // Convert YouTube watch URL to embed URL
-  const getYouTubeEmbed = (url: string): string => {
-    let videoId = "";
-    if (url.includes("youtu.be/")) {
-      videoId = url.split("youtu.be/")[1].split("?")[0];
-    } else if (url.includes("watch?v=")) {
-      videoId = url.split("watch?v=")[1].split("&")[0];
-    } else if (url.includes("embed/")) {
-      return url;
-    }
-    return `https://www.youtube.com/embed/${videoId}?autoplay=${autoPlay ? 1 : 0}&rel=0`;
-  };
-
-  // Convert Vimeo watch URL to embed URL
-  const getVimeoEmbed = (url: string): string => {
-    const match = url.match(/vimeo\.com\/(\d+)/);
-    const id = match ? match[1] : "";
-    return `https://player.vimeo.com/video/${id}?autoplay=${autoPlay ? 1 : 0}`;
-  };
-
-  // Handle progress tracking for MP4
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || actualType !== "mp4") return;
-
-    const handleTimeUpdate = () => {
-      if (onProgress && video.duration) {
-        onProgress(video.currentTime, video.duration);
+    if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
+      let videoId = "";
+      if (originalUrl.includes("youtu.be/")) {
+        videoId = originalUrl.split("youtu.be/")[1]?.split("?")[0];
+      } else if (originalUrl.includes("watch?v=")) {
+        videoId = originalUrl.split("watch?v=")[1]?.split("&")[0];
+      } else if (originalUrl.includes("embed/")) {
+        return originalUrl;
       }
-    };
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    }
 
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  }, [onProgress, actualType]);
+    if (originalUrl.includes("vimeo.com")) {
+      const videoId = originalUrl.split("vimeo.com/")[1]?.split("?")[0];
+      return `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+    }
 
-  // ===== YOUTUBE =====
-  if (actualType === "youtube") {
+    if (originalUrl.includes("drive.google.com")) {
+      const match = originalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `/api/stream/${match[1]}`;
+      }
+    }
+
+    if (/^[a-zA-Z0-9_-]{25,}$/.test(originalUrl) && !originalUrl.startsWith("http")) {
+      return `/api/stream/${originalUrl}`;
+    }
+
+    return originalUrl;
+  };
+
+  const finalUrl = getProcessedUrl(rawUrl);
+  const isIframe = finalUrl.includes("youtube.com/embed") || finalUrl.includes("player.vimeo.com");
+
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+  }, [rawUrl]);
+
+  if (!rawUrl) {
     return (
-      <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
-        <iframe
-          src={getYouTubeEmbed(src)}
-          className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          title="Video Player"
-        />
+      <div className="aspect-video bg-black rounded-xl flex items-center justify-center border border-white/10">
+        <div className="text-center text-zinc-500">
+          <AlertCircle size={48} className="mx-auto mb-2 opacity-50" />
+          <p>No video source available</p>
+        </div>
       </div>
     );
   }
 
-  // ===== VIMEO =====
-  if (actualType === "vimeo") {
-    return (
-      <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
-        <iframe
-          src={getVimeoEmbed(src)}
-          className="absolute inset-0 w-full h-full"
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          title="Video Player"
-        />
-      </div>
-    );
-  }
-
-  // ===== DAILYMOTION =====
-  if (actualType === "dailymotion") {
-    const match = src.match(/video\/([a-zA-Z0-9]+)/);
-    const id = match ? match[1] : "";
-    return (
-      <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
-        <iframe
-          src={`https://www.dailymotion.com/embed/video/${id}?autoplay=${autoPlay ? 1 : 0}`}
-          className="absolute inset-0 w-full h-full"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-          title="Video Player"
-        />
-      </div>
-    );
-  }
-
-  // ===== MP4 / HLS (Direct Video) =====
   return (
-    <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
-          <Loader2 className="w-12 h-12 text-yellow-500 animate-spin" />
+    <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-white/10 group shadow-2xl">
+      {isLoading && !error && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
         </div>
       )}
-      <video
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        controls
-        autoPlay={autoPlay}
-        className="absolute inset-0 w-full h-full"
-        onLoadedData={() => setIsLoading(false)}
-        onError={() => setIsLoading(false)}
-        controlsList="nodownload"
-      >
-        Your browser does not support the video tag.
-      </video>
+
+      {error && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 p-4 text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
+          <p className="text-white font-medium">Video Failed to Load</p>
+          <p className="text-sm text-zinc-400 mt-1">{error}</p>
+        </div>
+      )}
+
+      {isIframe ? (
+        <iframe
+          src={finalUrl}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setError("Could not load iframe video.");
+          }}
+        />
+      ) : (
+        <video
+          src={finalUrl}
+          poster={poster}
+          controls
+          autoPlay
+          playsInline
+          className="w-full h-full object-contain"
+          onLoadedData={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setError("Could not load video stream. Please check the URL.");
+          }}
+        />
+      )}
     </div>
   );
 }

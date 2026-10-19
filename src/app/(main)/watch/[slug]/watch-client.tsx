@@ -26,7 +26,6 @@ export function WatchClient({ content }: WatchClientProps) {
   );
 
   const handleEnded = useCallback(() => {
-    // Auto-navigate to next episode if available
     if (content.nextEpisodeId) {
       router.push(`/watch/${content.slug}?episode=${content.nextEpisodeId}`);
     }
@@ -34,7 +33,7 @@ export function WatchClient({ content }: WatchClientProps) {
 
   return (
     <VideoPlayer
-      src={content.videoUrl}
+      url={content.videoUrl || ""}
       poster={content.backdropUrl || content.posterUrl}
       title={content.title}
       contentId={content.id}

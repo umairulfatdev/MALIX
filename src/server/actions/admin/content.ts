@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
@@ -20,16 +19,11 @@ export interface ContentFormState {
 // ============================================================
 // CREATE MOVIE
 // ============================================================
-
 export async function createMovieAction(
   _prev: ContentFormState,
   formData: FormData
 ): Promise<ContentFormState> {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
 
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -38,24 +32,23 @@ export async function createMovieAction(
   const durationRaw = formData.get("duration") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
+  const quality = (formData.get("quality") as string) || "HD"; // 👈 QUALITY SAVED
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
   const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
-  const downloadUrl = (formData.get("downloadUrl") as string)?.trim() || null;
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
+  const driveId = (formData.get("driveId") as string) || null;
 
-  if (!title || title.length < 2) {
-    return { error: "Title is required (min 2 characters)" };
-  }
-  if (!description || description.length < 10) {
-    return { error: "Description is required (min 10 characters)" };
-  }
-  if (!videoUrl) {
-    return { error: "Video URL is required" };
-  }
+  const dl480 = (formData.get("download480p") as string)?.trim() || null;
+  const dl720 = (formData.get("download720p") as string)?.trim() || null;
+  const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
+
+  if (!title || title.length < 2) return { error: "Title is required" };
+  if (!description || description.length < 10) return { error: "Description is required" };
+  if (!videoUrl) return { error: "Video URL is required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
   const duration = durationRaw ? parseInt(durationRaw) : null;
@@ -65,69 +58,33 @@ export async function createMovieAction(
   if (existing) slug = `${slug}-${Date.now()}`;
 
   try {
-    // Detect video type
-    const videoType = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")
-      ? "youtube"
-      : videoUrl.includes("vimeo.com")
-        ? "vimeo"
-        : videoUrl.includes("dailymotion.com")
-          ? "dailymotion"
-          : "mp4";
+    const videoType = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") ? "youtube" : videoUrl.includes("vimeo.com") ? "vimeo" : "mp4";
 
     const content = await prisma.content.create({
       data: {
-        title,
-        slug,
-        description,
-        shortDesc,
-        type: "MOVIE",
-        releaseYear,
-        duration,
-        language,
-        country,
-        posterUrl,
-        backdropUrl,
-        trailerUrl,
+        title, slug, description, shortDesc, type: "MOVIE", driveId,
+        releaseYear, duration, language, country, quality, // 👈 Quality save ho rahi hai
+        posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
         publishedAt: status === "PUBLISHED" ? new Date() : null,
-        genres: genreIds.length
-          ? { connect: genreIds.map((id) => ({ id })) }
-          : undefined,
+        genres: genreIds.length ? { connect: genreIds.map((id) => ({ id })) } : undefined,
         movie: { create: {} },
-        videoSources: {
-          create: {
-            url: videoUrl,
-            type: videoType,
-            quality: "auto",
-            isDefault: true,
-          },
-        },
       },
     });
 
-    // Add download option if provided
-    if (downloadUrl) {
-      await prisma.downloadOption.create({
-        data: {
-          contentId: content.id,
-          quality: "1080p",
-          fileUrl: downloadUrl,
-          format: "mp4",
-          isAvailable: true,
-        },
-      });
-      await prisma.content.update({
-        where: { id: content.id },
-        data: { downloadEnabled: true },
-      });
+    if (videoUrl) {
+      await prisma.videoSource.create({ data: { contentId: content.id, url: videoUrl, type: videoType, isDefault: true } });
     }
 
-    revalidatePath("/admin/movies");
-    revalidatePath("/movies");
-    revalidatePath("/");
+    const downloadOptions = [];
+    if (dl480) downloadOptions.push({ contentId: content.id, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
+    if (dl720) downloadOptions.push({ contentId: content.id, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
+    if (dl1080) downloadOptions.push({ contentId: content.id, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
+    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
 
-    redirect("/admin/movies");
+    revalidatePath("/admin/movies"); revalidatePath("/movies"); revalidatePath("/");
+    return { success: true };
   } catch (error) {
     console.error("Create movie error:", error);
     return { error: "Failed to create movie. Please try again." };
@@ -137,17 +94,12 @@ export async function createMovieAction(
 // ============================================================
 // UPDATE MOVIE
 // ============================================================
-
 export async function updateMovieAction(
   movieId: string,
   _prev: ContentFormState,
   formData: FormData
 ): Promise<ContentFormState> {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
 
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -156,108 +108,57 @@ export async function updateMovieAction(
   const durationRaw = formData.get("duration") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
+  const quality = (formData.get("quality") as string) || "HD"; // 👈 QUALITY SAVED
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
   const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
-  const downloadUrl = (formData.get("downloadUrl") as string)?.trim() || null;
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
+  const driveId = (formData.get("driveId") as string) || null;
+
+  const dl480 = (formData.get("download480p") as string)?.trim() || null;
+  const dl720 = (formData.get("download720p") as string)?.trim() || null;
+  const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
 
   if (!title || title.length < 2) return { error: "Title required" };
-  if (!description || description.length < 10)
-    return { error: "Description required" };
+  if (!description || description.length < 10) return { error: "Description required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
   const duration = durationRaw ? parseInt(durationRaw) : null;
 
   try {
-    const existing = await prisma.content.findUnique({
-      where: { id: movieId },
-      include: { movie: true },
-    });
-
+    const existing = await prisma.content.findUnique({ where: { id: movieId } });
     if (!existing) return { error: "Movie not found" };
 
     await prisma.content.update({
       where: { id: movieId },
       data: {
-        title,
-        description,
-        shortDesc,
-        releaseYear,
-        duration,
-        language,
-        country,
-        posterUrl,
-        backdropUrl,
-        trailerUrl,
+        title, description, shortDesc, driveId, releaseYear, duration, language, country, quality, // 👈 Quality update ho rahi hai
+        posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
-        publishedAt:
-          status === "PUBLISHED" && !existing.publishedAt
-            ? new Date()
-            : existing.publishedAt,
-        genres: {
-          set: [],
-          connect: genreIds.map((id) => ({ id })),
-        },
+        publishedAt: status === "PUBLISHED" && !existing.publishedAt ? new Date() : existing.publishedAt,
+        genres: { set: [], connect: genreIds.map((id) => ({ id })) },
       },
     });
 
-    // Update video source
     if (videoUrl) {
-      const videoType = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")
-        ? "youtube"
-        : videoUrl.includes("vimeo.com")
-          ? "vimeo"
-          : "mp4";
-
-      await prisma.videoSource.deleteMany({
-        where: { contentId: movieId, episodeId: null },
-      });
-
-      await prisma.videoSource.create({
-        data: {
-          contentId: movieId,
-          url: videoUrl,
-          type: videoType,
-          quality: "auto",
-          isDefault: true,
-        },
-      });
+      const videoType = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") ? "youtube" : videoUrl.includes("vimeo.com") ? "vimeo" : "mp4";
+      await prisma.videoSource.deleteMany({ where: { contentId: movieId, episodeId: null } });
+      await prisma.videoSource.create({ data: { contentId: movieId, url: videoUrl, type: videoType, isDefault: true } });
     }
 
-    // Update download option
-    if (downloadUrl) {
-      await prisma.downloadOption.deleteMany({
-        where: { contentId: movieId },
-      });
+    await prisma.downloadOption.deleteMany({ where: { contentId: movieId } });
+    const downloadOptions = [];
+    if (dl480) downloadOptions.push({ contentId: movieId, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
+    if (dl720) downloadOptions.push({ contentId: movieId, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
+    if (dl1080) downloadOptions.push({ contentId: movieId, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
+    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
 
-      await prisma.downloadOption.create({
-        data: {
-          contentId: movieId,
-          quality: "1080p",
-          fileUrl: downloadUrl,
-          format: "mp4",
-          isAvailable: true,
-        },
-      });
-
-      await prisma.content.update({
-        where: { id: movieId },
-        data: { downloadEnabled: true },
-      });
-    }
-
-    revalidatePath("/admin/movies");
-    revalidatePath(`/admin/movies/${movieId}/edit`);
-    revalidatePath("/movies");
-    revalidatePath(`/content/${existing.slug}`);
-    revalidatePath("/");
-
-    redirect("/admin/movies");
+    revalidatePath("/admin/movies"); revalidatePath(`/admin/movies/${movieId}/edit`); revalidatePath("/movies"); revalidatePath(`/content/${existing.slug}`); revalidatePath("/");
+    return { success: true };
   } catch (error) {
     console.error("Update movie error:", error);
     return { error: "Failed to update movie" };
@@ -265,142 +166,56 @@ export async function updateMovieAction(
 }
 
 // ============================================================
-// DELETE / TOGGLE
+// DELETE / TOGGLE / GET (Purane functions)
 // ============================================================
-
 export async function deleteMovieAction(movieId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
     await prisma.content.delete({ where: { id: movieId } });
-    revalidatePath("/admin/movies");
-    revalidatePath("/movies");
+    revalidatePath("/admin/movies"); revalidatePath("/movies");
     return { success: true };
-  } catch (error) {
-    console.error("Delete movie error:", error);
-    return { error: "Failed to delete movie" };
-  }
+  } catch (error) { return { error: "Failed to delete movie" }; }
 }
 
 export async function togglePublishAction(movieId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
     const content = await prisma.content.findUnique({ where: { id: movieId } });
     if (!content) return { error: "Not found" };
-
     const newStatus = content.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-
-    await prisma.content.update({
-      where: { id: movieId },
-      data: {
-        status: newStatus,
-        publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt,
-      },
-    });
-
-    revalidatePath("/admin/movies");
-    revalidatePath("/movies");
+    await prisma.content.update({ where: { id: movieId }, data: { status: newStatus, publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt } });
+    revalidatePath("/admin/movies"); revalidatePath("/movies");
     return { success: true, status: newStatus };
-  } catch (error) {
-    console.error("Toggle publish error:", error);
-    return { error: "Failed to toggle status" };
-  }
+  } catch (error) { return { error: "Failed to toggle status" }; }
 }
 
-// ============================================================
-// GET MOVIES FOR ADMIN
-// ============================================================
-
-export async function getAdminMovies(params: {
-  search?: string;
-  status?: string;
-  page?: number;
-  perPage?: number;
-}) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { movies: [], total: 0, page: 1, totalPages: 0 };
-  }
-
+export async function getAdminMovies(params: { search?: string; status?: string; page?: number; perPage?: number }) {
+  try { await requireAdminAction(); } catch { return { movies: [], total: 0, page: 1, totalPages: 0 }; }
   const { search, status, page = 1, perPage = 20 } = params;
   const where: any = { type: "MOVIE" };
-
-  if (search && search.trim()) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-    ];
-  }
+  if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }, { description: { contains: search, mode: "insensitive" } }];
   if (status && status !== "ALL") where.status = status;
-
   const [movies, total] = await Promise.all([
-    prisma.content.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-      include: {
-        genres: { select: { id: true, name: true, slug: true } },
-        videoSources: true,
-      },
-    }),
+    prisma.content.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * perPage, take: perPage, include: { genres: true, videoSources: true } }),
     prisma.content.count({ where }),
   ]);
-
   return { movies, total, page, totalPages: Math.ceil(total / perPage) };
 }
 
-// ============================================================
-// GET SINGLE MOVIE FOR EDIT
-// ============================================================
-
 export async function getMovieForEdit(movieId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return null;
-  }
-
+  try { await requireAdminAction(); } catch { return null; }
   const content = await prisma.content.findUnique({
     where: { id: movieId, type: "MOVIE" },
-    include: {
-      genres: { select: { id: true, name: true } },
-      movie: true,
-      videoSources: true,
-      downloadOptions: true,
-    },
+    include: { genres: true, movie: true, videoSources: true, downloadOptions: true },
   });
-
   if (!content) return null;
-
-  // Attach video URL and download URL for the form
   const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
-  const downloadUrl = content.downloadOptions[0]?.fileUrl || null;
-
-  return {
-    ...content,
-    videoUrl,
-    downloadUrl,
-  };
+  const dl480 = content.downloadOptions.find((d) => d.quality === "480p")?.fileUrl || null;
+  const dl720 = content.downloadOptions.find((d) => d.quality === "720p")?.fileUrl || null;
+  const dl1080 = content.downloadOptions.find((d) => d.quality === "1080p")?.fileUrl || null;
+  return { ...content, videoUrl, download480p: dl480, download720p: dl720, download1080p: dl1080 };
 }
 
-// ============================================================
-// GET ALL GENRES
-// ============================================================
-
 export async function getAllGenresForAdmin() {
-  return await prisma.genre.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, slug: true },
-  });
+  return await prisma.genre.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true } });
 }

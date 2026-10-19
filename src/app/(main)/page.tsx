@@ -1,104 +1,113 @@
-import { HeroBanner } from "@/components/content/hero-banner";
-import { ContentRow } from "@/components/content/content-row";
-import { ContinueWatchingRow } from "@/components/content/continue-watching-row";
-import { FloatingPlanet } from "@/components/effects/floating-planet";
-import { getContinueWatching } from "@/server/actions/history";
+import Link from "next/link";
+import { Play, Star, TrendingUp, Sparkles } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { HeroSlider } from "@/components/layout/hero-slider";
 
-// ✅ Force dynamic — skip build-time DB queries
 export const dynamic = "force-dynamic";
-export const dynamicParams = true;
 
-const SAMPLE_DATA = {
-  movies: [
-    { id: "1", title: "The Dark Horizon", slug: "the-dark-horizon", posterUrl: null, releaseYear: 2024, avgRating: 8.5, type: "MOVIE" },
-    { id: "2", title: "Midnight Protocol", slug: "midnight-protocol", posterUrl: null, releaseYear: 2023, avgRating: 7.9, type: "MOVIE" },
-    { id: "3", title: "Crimson Tides", slug: "crimson-tides", posterUrl: null, releaseYear: 2024, avgRating: 8.2, type: "MOVIE" },
-    { id: "4", title: "The Last Signal", slug: "the-last-signal", posterUrl: null, releaseYear: 2022, avgRating: 7.4, type: "MOVIE" },
-    { id: "5", title: "Neon Requiem", slug: "neon-requiem", posterUrl: null, releaseYear: 2024, avgRating: 8.8, type: "MOVIE" },
-    { id: "6", title: "Solar Winds", slug: "solar-winds", posterUrl: null, releaseYear: 2023, avgRating: 7.6, type: "MOVIE" },
-  ],
-  series: [
-    { id: "s1", title: "Empire of Shadows", slug: "empire-of-shadows", posterUrl: null, releaseYear: 2024, avgRating: 9.1, type: "SERIES" },
-    { id: "s2", title: "Silent Waters", slug: "silent-waters", posterUrl: null, releaseYear: 2023, avgRating: 8.6, type: "SERIES" },
-    { id: "s3", title: "The Midnight Files", slug: "the-midnight-files", posterUrl: null, releaseYear: 2024, avgRating: 8.3, type: "SERIES" },
-    { id: "s4", title: "Broken Compass", slug: "broken-compass", posterUrl: null, releaseYear: 2022, avgRating: 7.8, type: "SERIES" },
-    { id: "s5", title: "Echoes of Tomorrow", slug: "echoes-of-tomorrow", posterUrl: null, releaseYear: 2024, avgRating: 8.9, type: "SERIES" },
-    { id: "s6", title: "Beyond the Void", slug: "beyond-the-void", posterUrl: null, releaseYear: 2023, avgRating: 8.1, type: "SERIES" },
-  ],
-  dramas: [
-    { id: "d1", title: "Fading Petals", slug: "fading-petals", posterUrl: null, releaseYear: 2024, avgRating: 8.9, type: "DRAMA" },
-    { id: "d2", title: "The Promise", slug: "the-promise", posterUrl: null, releaseYear: 2023, avgRating: 8.4, type: "DRAMA" },
-    { id: "d3", title: "Autumn Letters", slug: "autumn-letters", posterUrl: null, releaseYear: 2024, avgRating: 8.7, type: "DRAMA" },
-    { id: "d4", title: "Where the Sun Sets", slug: "where-the-sun-sets", posterUrl: null, releaseYear: 2023, avgRating: 8.2, type: "DRAMA" },
-    { id: "d5", title: "The Paper House", slug: "the-paper-house", posterUrl: null, releaseYear: 2024, avgRating: 8.5, type: "DRAMA" },
-    { id: "d6", title: "Whispers of Rain", slug: "whispers-of-rain", posterUrl: null, releaseYear: 2022, avgRating: 7.9, type: "DRAMA" },
-  ],
-};
-
-const HERO = {
-  title: "Empire of Shadows",
-  slug: "empire-of-shadows",
-  type: "Series",
-  description:
-    "In a city where power is currency and secrets are the only truth, a young detective uncovers a conspiracy that reaches the highest offices of the empire. Every step closer to the truth brings her closer to her own undoing.",
-  backdropUrl: null,
-  year: 2024,
-  rating: 9.1,
-  duration: 52,
-  genres: ["Crime", "Thriller", "Mystery"],
-};
+function MovieCard({ item }: { item: any }) {
+  return (
+    <Link href={`/content/${item.slug}`} className="group relative flex-shrink-0 w-[160px] md:w-[220px] transition-all duration-300 hover:-translate-y-2">
+      <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/10 shadow-2xl relative bg-zinc-900 group-hover:border-yellow-500/50 group-hover:shadow-[0_0_20px_rgba(234,179,8,0.3)] transition-all duration-300">
+        {item.posterUrl ? (
+          <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-zinc-600 font-bold">MALIX</div>
+        )}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+          <div className="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center transform scale-50 group-hover:scale-100 transition-transform duration-300 shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+            <Play size={20} className="fill-black text-black ml-1" />
+          </div>
+        </div>
+        {item.avgRating > 0 && (
+          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md border border-white/10 flex items-center gap-1">
+            <Star size={10} className="text-yellow-500 fill-yellow-500" />
+            <span className="text-xs font-bold text-white">{item.avgRating.toFixed(1)}</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-3">
+        <h3 className="text-sm md:text-base font-bold text-white truncate group-hover:text-yellow-500 transition-colors">{item.title}</h3>
+        <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-2">
+          <span>{item.releaseYear}</span>
+          <span className="w-1 h-1 rounded-full bg-zinc-600" />
+          <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold text-yellow-500">{item.quality || "HD"}</span>
+        </p>
+      </div>
+    </Link>
+  );
+}
 
 export default async function HomePage() {
-  // ✅ Safe fetch — agar DB connect nahi hua, crash nahi hoga
-  let continueWatching: any[] = [];
-  try {
-    continueWatching = await getContinueWatching(10);
-  } catch (error) {
-    console.warn("Continue watching fetch failed:", error);
-    continueWatching = [];
-  }
+  const [featuredMovies, trending, movies, series] = await Promise.all([
+    // 👇 NAYA: Ab sirf 1 nahi, 5 featured movies uthayenge
+    prisma.content.findMany({ 
+      where: { status: "PUBLISHED", isFeatured: true }, 
+      take: 5,
+      orderBy: { createdAt: "desc" } 
+    }),
+    prisma.content.findMany({ where: { status: "PUBLISHED" }, orderBy: { totalViews: "desc" }, take: 8 }),
+    prisma.content.findMany({ where: { status: "PUBLISHED", type: "MOVIE" }, orderBy: { avgRating: "desc" }, take: 8 }),
+    prisma.content.findMany({ where: { status: "PUBLISHED", type: "SERIES" }, orderBy: { avgRating: "desc" }, take: 8 }),
+  ]);
+
+  // Agar koi featured nahi hai, toh top trending utha lo
+  const sliderMovies = featuredMovies.length > 0 ? featuredMovies : trending.slice(0, 3);
 
   return (
-    <div className="pb-10">
-      {/* Hero with floating planet */}
-      <div className="relative">
-        <HeroBanner {...HERO} />
-        <FloatingPlanet />
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] text-white pb-20 overflow-hidden font-sans">
+      
+      {/* ================= HERO SLIDER ================= */}
+      <HeroSlider movies={sliderMovies} />
 
-      {/* Content rows */}
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 -mt-16 md:-mt-24 relative z-10">
-        {/* ✅ Continue Watching (only if user has history) */}
-        {continueWatching.length > 0 && (
-          <ContinueWatchingRow items={continueWatching} />
+      {/* ================= CAROUSELS ================= */}
+      <div className="relative z-20 max-w-[1400px] mx-auto px-4 md:px-8 -mt-12 space-y-12">
+        
+        {trending.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="text-yellow-500" size={26} />
+                <h2 className="text-xl md:text-3xl font-bold text-white tracking-wide">Trending Now</h2>
+              </div>
+              <Link href="/movies" className="text-sm font-semibold text-yellow-500 hover:text-yellow-400 transition-colors">View All →</Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x">
+              {trending.map((item) => <MovieCard key={item.id} item={item} />)}
+            </div>
+          </section>
         )}
 
-        <ContentRow
-          title="Trending Across the Galaxy"
-          items={SAMPLE_DATA.movies}
-          hrefPrefix="/content"
-        />
-        <ContentRow
-          title="Top 10 Constellations Today"
-          items={SAMPLE_DATA.series}
-          hrefPrefix="/content"
-          showNumbers
-        />
-        <ContentRow
-          title="Popular Movies"
-          items={SAMPLE_DATA.movies}
-          hrefPrefix="/content"
-        />
-        <ContentRow
-          title="Popular Dramas"
-          items={SAMPLE_DATA.dramas}
-          hrefPrefix="/content"
-        />
-        <ContentRow
-          title="Top Rated Series"
-          items={SAMPLE_DATA.series}
-          hrefPrefix="/content"
-        />
+        {movies.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="text-yellow-500" size={26} />
+                <h2 className="text-xl md:text-3xl font-bold text-white tracking-wide">Popular Movies</h2>
+              </div>
+              <Link href="/movies" className="text-sm font-semibold text-yellow-500 hover:text-yellow-400 transition-colors">View All →</Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x">
+              {movies.map((item) => <MovieCard key={item.id} item={item} />)}
+            </div>
+          </section>
+        )}
+
+        {series.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Star className="text-yellow-500 fill-yellow-500" size={26} />
+                <h2 className="text-xl md:text-3xl font-bold text-white tracking-wide">Top Rated Series</h2>
+              </div>
+              <Link href="/series" className="text-sm font-semibold text-yellow-500 hover:text-yellow-400 transition-colors">View All →</Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x">
+              {series.map((item) => <MovieCard key={item.id} item={item} />)}
+            </div>
+          </section>
+        )}
+
       </div>
     </div>
   );
