@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Loader2, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Loader2, AlertCircle, Volume2, VolumeX } from "lucide-react";
 
 interface VideoPlayerProps {
   url?: string;
@@ -19,40 +19,32 @@ interface VideoPlayerProps {
 export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showIntro, setShowIntro] = useState(true); // 👈 Intro ke liye state
+  const [isMuted, setIsMuted] = useState(true);
+  const introRef = useRef<HTMLVideoElement>(null);
 
   const rawUrl = url || src || "";
 
   const getProcessedUrl = (originalUrl: string) => {
     if (!originalUrl) return "";
-
     if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
       let videoId = "";
-      if (originalUrl.includes("youtu.be/")) {
-        videoId = originalUrl.split("youtu.be/")[1]?.split("?")[0];
-      } else if (originalUrl.includes("watch?v=")) {
-        videoId = originalUrl.split("watch?v=")[1]?.split("&")[0];
-      } else if (originalUrl.includes("embed/")) {
-        return originalUrl;
-      }
+      if (originalUrl.includes("youtu.be/")) videoId = originalUrl.split("youtu.be/")[1]?.split("?")[0];
+      else if (originalUrl.includes("watch?v=")) videoId = originalUrl.split("watch?v=")[1]?.split("&")[0];
+      else if (originalUrl.includes("embed/")) return originalUrl;
       return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
     }
-
     if (originalUrl.includes("vimeo.com")) {
       const videoId = originalUrl.split("vimeo.com/")[1]?.split("?")[0];
       return `https://player.vimeo.com/video/${videoId}?autoplay=1`;
     }
-
     if (originalUrl.includes("drive.google.com")) {
       const match = originalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        return `/api/stream/${match[1]}`;
-      }
+      if (match && match[1]) return `/api/stream/${match[1]}`;
     }
-
     if (/^[a-zA-Z0-9_-]{25,}$/.test(originalUrl) && !originalUrl.startsWith("http")) {
       return `/api/stream/${originalUrl}`;
     }
-
     return originalUrl;
   };
 
@@ -63,6 +55,11 @@ export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
     setIsLoading(true);
     setError(null);
   }, [rawUrl]);
+
+  // Intro video end hone pe asli video chalao
+  const handleIntroEnd = () => {
+    setShowIntro(false);
+  };
 
   if (!rawUrl) {
     return (
@@ -77,6 +74,38 @@ export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
 
   return (
     <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-white/10 group shadow-2xl">
+      
+      {/* 1. INTRO VIDEO (15 sec) */}
+      {showIntro && (
+        <div className="absolute inset-0 z-30 bg-black flex items-center justify-center">
+          <video
+            ref={introRef}
+            src="/intro.mp4"
+            autoPlay
+            muted={isMuted}
+            playsInline
+            className="w-full h-full object-contain"
+            onEnded={handleIntroEnd}
+            onError={() => setShowIntro(false)} // Agar intro na mile toh asli video chalao
+          />
+          {/* Skip Button */}
+          <button
+            onClick={handleIntroEnd}
+            className="absolute bottom-4 right-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg backdrop-blur-md transition-colors border border-white/20"
+          >
+            Skip Intro
+          </button>
+          {/* Mute/Unmute Button */}
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="absolute bottom-4 left-4 w-10 h-10 rounded-full border border-white/30 flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-black/60 transition text-white"
+          >
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
+        </div>
+      )}
+
+      {/* 2. ASLI VIDEO */}
       {isLoading && !error && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
@@ -108,7 +137,7 @@ export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
           src={finalUrl}
           poster={poster}
           controls
-          autoPlay
+          autoPlay={!showIntro}
           playsInline
           className="w-full h-full object-contain"
           onLoadedData={() => setIsLoading(false)}
