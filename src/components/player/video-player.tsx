@@ -1,27 +1,22 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Loader2, AlertCircle, Volume2, VolumeX } from "lucide-react";
+import { Loader2, AlertCircle, Volume2, VolumeX, Download } from "lucide-react";
 
 interface VideoPlayerProps {
   url?: string;
   src?: string;
   poster?: string;
   title?: string;
-  contentId?: string;
-  episodeId?: string | null;
-  initialPosition?: number;
-  autoPlay?: boolean;
-  onProgressUpdate?: (position: number, duration: number) => void;
-  onEnded?: () => void;
+  downloadUrl?: string | null; // 👈 NAYA
+  // ... baaki props
 }
 
-export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
+export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showIntro, setShowIntro] = useState(true); // 👈 Intro ke liye state
+  const [showIntro, setShowIntro] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
-  const introRef = useRef<HTMLVideoElement>(null);
 
   const rawUrl = url || src || "";
 
@@ -33,10 +28,6 @@ export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
       else if (originalUrl.includes("watch?v=")) videoId = originalUrl.split("watch?v=")[1]?.split("&")[0];
       else if (originalUrl.includes("embed/")) return originalUrl;
       return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    }
-    if (originalUrl.includes("vimeo.com")) {
-      const videoId = originalUrl.split("vimeo.com/")[1]?.split("?")[0];
-      return `https://player.vimeo.com/video/${videoId}?autoplay=1`;
     }
     if (originalUrl.includes("drive.google.com")) {
       const match = originalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -56,10 +47,7 @@ export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
     setError(null);
   }, [rawUrl]);
 
-  // Intro video end hone pe asli video chalao
-  const handleIntroEnd = () => {
-    setShowIntro(false);
-  };
+  const handleIntroEnd = () => setShowIntro(false);
 
   if (!rawUrl) {
     return (
@@ -73,79 +61,82 @@ export function VideoPlayer({ url, src, poster }: VideoPlayerProps) {
   }
 
   return (
-    <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-white/10 group shadow-2xl">
-      
-      {/* 1. INTRO VIDEO (15 sec) */}
-      {showIntro && (
-        <div className="absolute inset-0 z-30 bg-black flex items-center justify-center">
+    <div className="w-full">
+      {/* Video Player */}
+      <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-white/10 group shadow-2xl">
+        
+        {showIntro && (
+          <div className="absolute inset-0 z-30 bg-black flex items-center justify-center">
+            <video
+              src="/intro.mp4"
+              autoPlay
+              muted={isMuted}
+              playsInline
+              className="w-full h-full object-contain"
+              onEnded={handleIntroEnd}
+              onError={() => setShowIntro(false)}
+            />
+            <button
+              onClick={handleIntroEnd}
+              className="absolute bottom-4 right-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg backdrop-blur-md transition-colors border border-white/20"
+            >
+              Skip Intro
+            </button>
+          </div>
+        )}
+
+        {isLoading && !error && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 p-4 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
+            <p className="text-white font-medium">Video Failed to Load</p>
+            <p className="text-sm text-zinc-400 mt-1">{error}</p>
+          </div>
+        )}
+
+        {isIframe ? (
+          <iframe
+            src={finalUrl}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            onLoad={() => setIsLoading(false)}
+          />
+        ) : (
           <video
-            ref={introRef}
-            src="/intro.mp4"
-            autoPlay
-            muted={isMuted}
+            src={finalUrl}
+            poster={poster}
+            controls
+            autoPlay={!showIntro}
             playsInline
             className="w-full h-full object-contain"
-            onEnded={handleIntroEnd}
-            onError={() => setShowIntro(false)} // Agar intro na mile toh asli video chalao
+            onLoadedData={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setError("Could not load video stream.");
+            }}
           />
-          {/* Skip Button */}
-          <button
-            onClick={handleIntroEnd}
-            className="absolute bottom-4 right-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg backdrop-blur-md transition-colors border border-white/20"
+        )}
+      </div>
+
+      {/* 👇 NAYA: Custom Download Button */}
+      {downloadUrl && (
+        <div className="mt-4 flex justify-end">
+          <a
+            href={downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg"
           >
-            Skip Intro
-          </button>
-          {/* Mute/Unmute Button */}
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="absolute bottom-4 left-4 w-10 h-10 rounded-full border border-white/30 flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-black/60 transition text-white"
-          >
-            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-          </button>
+            <Download size={20} />
+            Download Video
+          </a>
         </div>
-      )}
-
-      {/* 2. ASLI VIDEO */}
-      {isLoading && !error && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
-        </div>
-      )}
-
-      {error && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 p-4 text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
-          <p className="text-white font-medium">Video Failed to Load</p>
-          <p className="text-sm text-zinc-400 mt-1">{error}</p>
-        </div>
-      )}
-
-      {isIframe ? (
-        <iframe
-          src={finalUrl}
-          className="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          onLoad={() => setIsLoading(false)}
-          onError={() => {
-            setIsLoading(false);
-            setError("Could not load iframe video.");
-          }}
-        />
-      ) : (
-        <video
-          src={finalUrl}
-          poster={poster}
-          controls
-          autoPlay={!showIntro}
-          playsInline
-          className="w-full h-full object-contain"
-          onLoadedData={() => setIsLoading(false)}
-          onError={() => {
-            setIsLoading(false);
-            setError("Could not load video stream. Please check the URL.");
-          }}
-        />
       )}
     </div>
   );

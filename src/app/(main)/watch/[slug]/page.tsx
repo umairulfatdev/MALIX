@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Star, Clock, Calendar, ArrowLeft } from "lucide-react";
 import { getWatchContent } from "@/server/actions/watch";
 import { EpisodeNav } from "@/components/player/episode-nav";
 import { WatchClient } from "./watch-client";
+import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const dynamicParams = true;
@@ -23,6 +24,13 @@ export async function generateMetadata({ params }: Props) {
 export default async function WatchPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { episode: episodeId } = await searchParams;
+
+  // Check karo ke user login hai ya nahi
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    redirect(`/login?callbackUrl=/watch/${slug}${episodeId ? `?episode=${episodeId}` : ""}`);
+  }
 
   const content = await getWatchContent(slug, episodeId);
 

@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // 👈 useSearchParams import kiya
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, Zap, MonitorPlay } from "lucide-react";
 import { toast } from "sonner";
 import { loginAction } from "@/server/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // 👈 Search params se callbackUrl nikalo
+  const callbackUrl = searchParams.get("callbackUrl") || "/"; // 👈 Default home page
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -27,7 +30,8 @@ export default function LoginPage() {
         return;
       }
       toast.success("Welcome back!");
-      router.push("/");
+      // 👇 NAYA: callbackUrl pe redirect karo
+      router.push(callbackUrl);
       router.refresh();
     } catch {
       toast.error("Login failed. Please try again.");
@@ -69,7 +73,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Smaller Headings */}
           <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight mb-3">
             Your Next <br />
             <span className="text-yellow-500">Favorite Story</span> <br />

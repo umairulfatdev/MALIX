@@ -11,16 +11,13 @@ export async function GET(
   }
 
   try {
-    // Google Drive ka direct download link
     const driveUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    
-    // Range header check karo (video streaming ke liye zaroori)
     const range = req.headers.get("range");
 
     const response = await fetch(driveUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        ...(range ? { Range: range } : {}), // 👈 Range header pass karo
+        ...(range ? { Range: range } : {}),
       },
     });
 
@@ -37,10 +34,8 @@ export async function GET(
       headers.set("Content-Length", contentLength);
     }
 
-    // 👇 Accept-Ranges header add karo (streaming ke liye)
     headers.set("Accept-Ranges", "bytes");
     
-    // 👇 Content-Range header pass karo agar hai
     const contentRange = response.headers.get("Content-Range");
     if (contentRange) {
       headers.set("Content-Range", contentRange);
@@ -49,7 +44,7 @@ export async function GET(
     headers.set("Cache-Control", "public, max-age=3600");
 
     return new NextResponse(response.body, {
-      status: response.status, // 206 Partial Content ya 200 OK
+      status: response.status,
       headers,
     });
   } catch (error) {

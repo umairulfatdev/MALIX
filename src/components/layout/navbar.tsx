@@ -28,12 +28,6 @@ export async function Navbar() {
               <span className="text-xs text-yellow-100/60 tracking-wide">
                 Cinematic Experience on MALIX
               </span>
-              <span className="text-xs text-yellow-200/80 tracking-cinematic uppercase">
-                ● Trending
-              </span>
-              <span className="text-xs text-yellow-100/60 tracking-wide">
-                Watch. Discover. Enjoy.
-              </span>
             </div>
           ))}
         </div>
@@ -43,10 +37,12 @@ export async function Navbar() {
       <header className="sticky top-0 z-50 glass-dark">
         <nav className="max-w-[1800px] mx-auto px-4 md:px-8 lg:px-12">
           <div className="flex items-center justify-between h-16 md:h-20 gap-4">
+            
             {/* Logo + Desktop Nav */}
             <div className="flex items-center gap-8 md:gap-12">
               <MalixLogo size="md" showText={true} />
 
+              {/* 👇 Desktop Links (Badi screen pe) */}
               <div className="hidden lg:flex items-center gap-8">
                 {NAV_LINKS.map((link) => (
                   <Link
@@ -63,7 +59,7 @@ export async function Navbar() {
 
             {/* Right side */}
             <div className="flex items-center gap-3 md:gap-4">
-              {/* ✅ Functional Search Bar */}
+              {/* Search Bar (Desktop only) */}
               <div className="hidden md:block">
                 <SearchBar />
               </div>
@@ -88,7 +84,7 @@ export async function Navbar() {
                 </div>
               )}
 
-              {/* Mobile menu */}
+              {/* 👇 Mobile Menu (Hamburger) */}
               <MobileMenu user={user} />
             </div>
           </div>
