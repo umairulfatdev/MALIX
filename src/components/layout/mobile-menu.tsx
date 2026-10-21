@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
-// 👇 NAV_LINKS direct yahan define kar diye hain
+// 👇 NAV_LINKS direct yahan define hain (koi import nahi)
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/movies", label: "Movies" },
