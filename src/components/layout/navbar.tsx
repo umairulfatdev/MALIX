@@ -1,95 +1,69 @@
-import Link from "next/link";
-import { NAV_LINKS } from "@/lib/constants";
-import { fetchCurrentUser } from "@/server/actions/user";
-import { UserMenu } from "./user-menu";
-import { MobileMenu } from "./mobile-menu";
-import { SearchBar } from "@/components/content/search-bar";
-import { MalixLogo } from "./malix-logo";
+"use client"; // 👈 Client component banao taake useState chale
 
-export async function Navbar() {
-  const user = await fetchCurrentUser();
+import { useState } from "react";
+import Link from "next/link";
+import { Menu, X } from "lucide-react";
+
+const NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/movies", label: "Movies" },
+  { href: "/dramas", label: "Dramas" },
+  { href: "/series", label: "Series" },
+  { href: "/anime", label: "Anime" },
+];
+
+export function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <>
-      {/* Top Ticker */}
-      <div className="bg-gradient-to-r from-yellow-950 via-yellow-900 to-yellow-950 border-b border-yellow-800/30 overflow-hidden">
-        <div className="flex whitespace-nowrap animate-marquee py-1.5">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex items-center gap-12 px-6">
-              <span className="text-xs text-yellow-200/80 tracking-cinematic uppercase">
-                ● Now Streaming
-              </span>
-              <span className="text-xs text-yellow-100/60 tracking-wide">
-                New Episodes Every Friday
-              </span>
-              <span className="text-xs text-yellow-200/80 tracking-cinematic uppercase">
-                ● Featured
-              </span>
-              <span className="text-xs text-yellow-100/60 tracking-wide">
-                Cinematic Experience on MALIX
-              </span>
-            </div>
+    <header className="sticky top-0 z-50 bg-black/95 backdrop-blur-xl border-b border-white/10">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center justify-between">
+        
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <img src="/logo.png" alt="MALIX" className="h-10 w-auto object-contain" />
+          <span className="text-xl md:text-2xl font-black text-yellow-500 tracking-widest hidden sm:block">
+            MALIX
+          </span>
+        </Link>
+
+        {/* Desktop Links */}
+        <nav className="hidden lg:flex items-center gap-8">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="text-sm font-medium text-zinc-400 hover:text-white">
+              {link.label}
+            </Link>
           ))}
-        </div>
+        </nav>
+
+        {/* Mobile Hamburger */}
+        <button onClick={() => setMobileOpen(true)} className="lg:hidden text-white p-2">
+          <Menu size={24} />
+        </button>
       </div>
 
-      {/* Main Navbar */}
-      <header className="sticky top-0 z-50 glass-dark">
-        <nav className="max-w-[1800px] mx-auto px-4 md:px-8 lg:px-12">
-          <div className="flex items-center justify-between h-16 md:h-20 gap-4">
-            
-            {/* Logo + Desktop Nav */}
-            <div className="flex items-center gap-8 md:gap-12">
-              <MalixLogo size="md" showText={true} />
-
-              {/* 👇 Desktop Links (Badi screen pe) */}
-              <div className="hidden lg:flex items-center gap-8">
-                {NAV_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="text-sm font-medium text-zinc-400 hover:text-white transition-colors relative group"
-                  >
-                    {link.label}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Right side */}
-            <div className="flex items-center gap-3 md:gap-4">
-              {/* Search Bar (Desktop only) */}
-              <div className="hidden md:block">
-                <SearchBar />
-              </div>
-
-              {/* User menu or auth buttons */}
-              {user ? (
-                <UserMenu user={user} />
-              ) : (
-                <div className="hidden md:flex items-center gap-2">
-                  <Link
-                    href="/login"
-                    className="text-sm font-medium text-zinc-300 hover:text-white px-4 py-2 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="btn-cosmic text-sm px-5 py-2 font-semibold"
-                  >
-                    Get Started
-                  </Link>
-                </div>
-              )}
-
-              {/* 👇 Mobile Menu (Hamburger) */}
-              <MobileMenu user={user} />
-            </div>
+      {/* Mobile Menu */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/95 lg:hidden">
+          <div className="flex justify-end p-4">
+            <button onClick={() => setMobileOpen(false)} className="text-white">
+              <X size={24} />
+            </button>
           </div>
-        </nav>
-      </header>
-    </>
+          <nav className="flex flex-col p-8 space-y-6">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="text-2xl font-bold text-white hover:text-yellow-500"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
+    </header>
   );
 }
