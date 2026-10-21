@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, Search, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles } from "lucide-react";
 import { NAV_LINKS } from "@/lib/constants";
 
 interface MobileMenuProps {
@@ -18,65 +18,55 @@ export function MobileMenu({ user }: MobileMenuProps) {
 
   return (
     <>
+      {/* Hamburger Button */}
       <button
         onClick={() => setOpen(true)}
         className="lg:hidden p-2 rounded-xl glass-cosmic"
         aria-label="Menu"
       >
-        <Menu size={20} className="text-white" />
+        <Menu size={24} className="text-white" />
       </button>
 
+      {/* Mobile Drawer */}
       {open && (
         <>
           <div
-            className="fixed inset-0 bg-space-deep/80 backdrop-blur-md z-[100] animate-fade-in"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] animate-fade-in"
             onClick={() => setOpen(false)}
           />
 
-          <div className="fixed right-0 top-0 h-full w-[85%] max-w-sm glass-cosmic z-[101] animate-slide-up overflow-y-auto">
-            <div className="relative flex items-center justify-between p-5 border-b border-white/5 overflow-hidden">
-              <div className="absolute -top-10 -right-10 w-40 h-40 nebula-purple" />
-              <div className="relative flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cosmic-red via-cosmic-pink to-cosmic-purple flex items-center justify-center">
-                  <Sparkles size={18} className="text-white" />
-                </div>
-                <span className="text-xl font-black tracking-cinematic text-white">
-                  MALIX
-                </span>
+          <div className="fixed right-0 top-0 h-full w-[85%] max-w-sm bg-[#0a0a0a] z-[101] animate-slide-up overflow-y-auto border-l border-white/10">
+            
+            {/* Header */}
+            <div className="relative flex items-center justify-between p-5 border-b border-white/5">
+              <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="MALIX" className="h-8 w-auto object-contain" />
+                <span className="text-xl font-black text-yellow-500 tracking-widest">MALIX</span>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="relative p-2 rounded-lg hover:bg-white/5"
+                className="p-2 rounded-lg hover:bg-white/5 text-white"
               >
-                <X size={20} className="text-white" />
+                <X size={24} />
               </button>
             </div>
 
-            <div className="p-5">
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2.5">
-                <Search size={15} className="text-zinc-500" />
-                <input
-                  type="search"
-                  placeholder="Search the galaxy..."
-                  className="bg-transparent border-none outline-none text-sm text-white placeholder-zinc-500 w-full"
-                />
-              </div>
-            </div>
-
-            <nav className="px-3 pb-4">
+            {/* Navigation Links */}
+            <nav className="px-3 py-4">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-3 text-base font-medium text-zinc-300 hover:text-white hover:bg-cosmic-purple/10 rounded-xl transition-colors"
+                  className="block px-4 py-4 text-base font-medium text-zinc-300 hover:text-yellow-500 hover:bg-white/5 rounded-xl transition-colors"
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            <div className="border-t border-white/5 p-5 space-y-3">
+            {/* Auth Buttons */}
+            <div className="border-t border-white/5 p-5 space-y-3 mt-4">
               {user ? (
                 <>
                   <Link
@@ -108,14 +98,14 @@ export function MobileMenu({ user }: MobileMenuProps) {
                   <Link
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="btn-cosmic-ghost block text-center py-3"
+                    className="block text-center w-full py-3 rounded-xl border border-yellow-500/50 text-yellow-500 font-semibold hover:bg-yellow-500 hover:text-black transition-all"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setOpen(false)}
-                    className="btn-cosmic block text-center py-3 font-semibold"
+                    className="block text-center w-full py-3 rounded-xl bg-yellow-500 text-black font-semibold hover:bg-yellow-400 transition-all"
                   >
                     Get Started
                   </Link>
