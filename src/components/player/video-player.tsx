@@ -8,8 +8,7 @@ interface VideoPlayerProps {
   src?: string;
   poster?: string;
   title?: string;
-  downloadUrl?: string | null; // 👈 NAYA
-  // ... baaki props
+  downloadUrl?: string | null;
 }
 
 export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps) {
@@ -17,6 +16,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
   const [error, setError] = useState<string | null>(null);
   const [showIntro, setShowIntro] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const rawUrl = url || src || "";
 
@@ -109,11 +109,13 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
           />
         ) : (
           <video
+            ref={videoRef}
             src={finalUrl}
             poster={poster}
             controls
             autoPlay={!showIntro}
             playsInline
+            preload="auto" // 👈 NAYA: Video pehle se load karne ke liye
             className="w-full h-full object-contain"
             onLoadedData={() => setIsLoading(false)}
             onError={() => {

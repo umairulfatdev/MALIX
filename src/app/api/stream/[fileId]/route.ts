@@ -14,11 +14,14 @@ export async function GET(
     const driveUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
     const range = req.headers.get("range");
 
+    // 👇 NAYA: Server-side caching ke liye headers
     const response = await fetch(driveUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         ...(range ? { Range: range } : {}),
       },
+      // 👇 Next.js ko batao ke yeh response cache kare
+      next: { revalidate: 3600 } // 1 hour cache
     });
 
     if (!response.ok && response.status !== 206) {
@@ -41,7 +44,8 @@ export async function GET(
       headers.set("Content-Range", contentRange);
     }
 
-    headers.set("Cache-Control", "public, max-age=3600");
+    // 👇 NAYA: Edge caching ke liye (Vercel par super fast)
+    headers.set("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
 
     return new NextResponse(response.body, {
       status: response.status,
