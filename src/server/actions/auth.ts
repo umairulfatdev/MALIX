@@ -16,10 +16,7 @@ export type AuthActionState = {
 };
 
 // ---------- Register ----------
-export async function registerAction(
-  _prev: AuthActionState,
-  formData: FormData
-): Promise<AuthActionState> {
+export async function registerAction(formData: FormData): Promise<AuthActionState> {
   const raw = {
     name: formData.get("name"),
     email: formData.get("email"),
@@ -67,10 +64,7 @@ export async function registerAction(
 }
 
 // ---------- Login ----------
-export async function loginAction(
-  _prev: AuthActionState,
-  formData: FormData
-): Promise<AuthActionState> {
+export async function loginAction(formData: FormData): Promise<AuthActionState> {
   const raw = {
     email: formData.get("email"),
     password: formData.get("password"),

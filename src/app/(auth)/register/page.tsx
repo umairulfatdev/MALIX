@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, Zap, MonitorPlay } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { registerAction } from "@/server/actions/auth";
 
@@ -36,6 +36,7 @@ export default function RegisterPage() {
         setIsLoading(false);
         return;
       }
+      
       toast.success("Account created successfully!");
       router.push("/");
       router.refresh();
@@ -63,14 +64,8 @@ export default function RegisterPage() {
         
         {/* LEFT SIDE (Branding) */}
         <div className="hidden lg:flex w-1/2 flex-col justify-center pr-8">
-          
           <div className="mb-6">
-            <img 
-              src="/logo.png" 
-              alt="MALIX Logo" 
-              className="h-12 w-auto object-contain mb-3" 
-              onError={(e) => (e.currentTarget.style.display = 'none')} 
-            />
+            <img src="/logo.png" alt="MALIX Logo" className="h-12 w-auto object-contain mb-3" />
             <div className="text-zinc-400 text-[9px] tracking-[0.2em] font-medium flex items-center gap-2">
               MOVIES <span className="w-1 h-1 rounded-full bg-yellow-500" /> 
               DRAMAS <span className="w-1 h-1 rounded-full bg-yellow-500" /> 
@@ -126,7 +121,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* Passwords in a grid to save height */}
+              {/* Passwords */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
@@ -140,7 +135,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                   >
                     {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
@@ -158,21 +153,21 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                   >
                     {showConfirmPassword ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
                 </div>
               </div>
 
-              {/* Terms Checkbox */}
+              {/* Terms */}
               <div className="flex items-center gap-2 text-[9px] py-1">
                 <label className="flex items-center gap-1.5 text-zinc-400 cursor-pointer">
                   <div className="w-2.5 h-2.5 rounded border border-yellow-500 bg-[#151515] flex items-center justify-center">
                     <input type="checkbox" required className="hidden" />
                     <svg className="w-2 h-2 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                   </div>
-                  I agree to the <Link href="#" className="text-yellow-500 hover:underline">Terms of Service</Link> and <Link href="#" className="text-yellow-500 hover:underline">Privacy Policy</Link>.
+                  I agree to the <span className="text-yellow-500">Terms</span> and <span className="text-yellow-500">Privacy Policy</span>.
                 </label>
               </div>
 
@@ -202,30 +197,12 @@ export default function RegisterPage() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
-              <div className="flex flex-col items-center gap-0.5 text-zinc-500 hover:text-yellow-500 transition-colors cursor-pointer">
-                <ShieldCheck size={10} />
-                <span className="text-[6px] font-medium">Secure</span>
-              </div>
-              <div className="w-px h-2 bg-white/5" />
-              <div className="flex flex-col items-center gap-0.5 text-zinc-500 hover:text-yellow-500 transition-colors cursor-pointer">
-                <Zap size={10} />
-                <span className="text-[6px] font-medium">Fast Streaming</span>
-              </div>
-              <div className="w-px h-2 bg-white/5" />
-              <div className="flex flex-col items-center gap-0.5 text-zinc-500 hover:text-yellow-500 transition-colors cursor-pointer">
-                <MonitorPlay size={10} />
-                <span className="text-[6px] font-medium">All Devices</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Signin Link */}
-          <div className="mt-3 text-center text-[9px] text-zinc-400">
-            Already have an account?{" "}
-            <Link href="/login" className="text-yellow-500 hover:text-yellow-400 font-bold">
-              Sign In
-            </Link>
+            <p className="text-center text-[9px] text-zinc-400 mt-4">
+              Already have an account?{" "}
+              <Link href="/login" className="text-yellow-500 hover:text-yellow-400 font-bold">
+                Sign In
+              </Link>
+            </p>
           </div>
         </div>
       </div>
