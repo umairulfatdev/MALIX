@@ -29,18 +29,17 @@ export function MalixLogo({
       className={cn("flex items-center gap-2 group", className)}
       aria-label="MALIX Home"
     >
-      {/* ✅ Logo Image */}
+      {/* Logo Image - No onError (Server Component) */}
       <div className="relative flex-shrink-0">
         <img
-          src="/logo.png" // 👈 NAYA: sahi path daala hai
+          src="/logo.png"
           alt="MALIX"
           className="relative w-auto object-contain transition-all group-hover:scale-105"
           style={{ height: `${s.height}px` }}
-          onError={(e) => (e.currentTarget.style.display = 'none')}
         />
       </div>
 
-      {/* ✅ MALIX Text */}
+      {/* MALIX Text */}
       {showText && (
         <span className={cn(s.text, "font-black text-yellow-500 tracking-widest")}>
           MALIX
