@@ -2,8 +2,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, Sparkles } from "lucide-react";
-import { NAV_LINKS } from "@/lib/constants";
+import { Menu, X } from "lucide-react";
+
+// 👇 NAV_LINKS direct yahan define kar diye hain
+const NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/movies", label: "Movies" },
+  { href: "/dramas", label: "Dramas" },
+  { href: "/series", label: "Series" },
+  { href: "/anime", label: "Anime" },
+];
 
 interface MobileMenuProps {
   user: {
@@ -21,44 +29,46 @@ export function MobileMenu({ user }: MobileMenuProps) {
       {/* Hamburger Button */}
       <button
         onClick={() => setOpen(true)}
-        className="lg:hidden p-2 rounded-xl glass-cosmic"
+        className="lg:hidden p-2 rounded-xl text-white"
         aria-label="Menu"
       >
-        <Menu size={24} className="text-white" />
+        <Menu size={24} />
       </button>
 
       {/* Mobile Drawer */}
       {open && (
         <>
+          {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] animate-fade-in"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
             onClick={() => setOpen(false)}
           />
 
-          <div className="fixed right-0 top-0 h-full w-[85%] max-w-sm bg-[#0a0a0a] z-[101] animate-slide-up overflow-y-auto border-l border-white/10">
+          {/* Drawer */}
+          <div className="fixed right-0 top-0 h-full w-[80%] max-w-sm bg-[#0a0a0a] z-[101] overflow-y-auto border-l border-white/10">
             
             {/* Header */}
-            <div className="relative flex items-center justify-between p-5 border-b border-white/5">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2">
                 <img src="/logo.png" alt="MALIX" className="h-8 w-auto object-contain" />
                 <span className="text-xl font-black text-yellow-500 tracking-widest">MALIX</span>
-              </div>
+              </Link>
               <button
                 onClick={() => setOpen(false)}
-                className="p-2 rounded-lg hover:bg-white/5 text-white"
+                className="p-2 rounded-lg text-white"
               >
                 <X size={24} />
               </button>
             </div>
 
-            {/* Navigation Links */}
-            <nav className="px-3 py-4">
+            {/* Nav Links */}
+            <nav className="p-4 space-y-1">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-4 text-base font-medium text-zinc-300 hover:text-yellow-500 hover:bg-white/5 rounded-xl transition-colors"
+                  className="block px-4 py-3 text-base font-medium text-zinc-300 hover:text-yellow-500 hover:bg-white/5 rounded-lg transition-colors"
                 >
                   {link.label}
                 </Link>
@@ -66,50 +76,45 @@ export function MobileMenu({ user }: MobileMenuProps) {
             </nav>
 
             {/* Auth Buttons */}
-            <div className="border-t border-white/5 p-5 space-y-3 mt-4">
+            <div className="p-4 border-t border-white/10 mt-4">
               {user ? (
-                <>
+                <div className="space-y-2">
+                  <p className="text-sm text-zinc-400 px-4">Signed in as</p>
+                  <p className="text-white font-semibold px-4">{user.name}</p>
                   <Link
                     href="/profile"
                     onClick={() => setOpen(false)}
-                    className="block text-center text-sm text-zinc-300 py-2"
+                    className="block text-center py-3 rounded-lg border border-white/20 text-white mt-2"
                   >
-                    {user.name}
-                  </Link>
-                  <Link
-                    href="/watchlist"
-                    onClick={() => setOpen(false)}
-                    className="btn-cosmic-ghost block text-center py-3"
-                  >
-                    My Watchlist
+                    My Profile
                   </Link>
                   {user.role === "ADMIN" && (
                     <Link
                       href="/admin"
                       onClick={() => setOpen(false)}
-                      className="btn-cosmic-ghost block text-center py-3"
+                      className="block text-center py-3 rounded-lg bg-yellow-500 text-black font-semibold"
                     >
-                      Admin Dashboard
+                      Admin Panel
                     </Link>
                   )}
-                </>
+                </div>
               ) : (
-                <>
+                <div className="space-y-2">
                   <Link
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="block text-center w-full py-3 rounded-xl border border-yellow-500/50 text-yellow-500 font-semibold hover:bg-yellow-500 hover:text-black transition-all"
+                    className="block text-center w-full py-3 rounded-lg border border-yellow-500/50 text-yellow-500 font-semibold"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setOpen(false)}
-                    className="block text-center w-full py-3 rounded-xl bg-yellow-500 text-black font-semibold hover:bg-yellow-400 transition-all"
+                    className="block text-center w-full py-3 rounded-lg bg-yellow-500 text-black font-semibold"
                   >
                     Get Started
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
