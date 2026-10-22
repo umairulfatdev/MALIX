@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, Zap, MonitorPlay } from "lucide-react";
+import { signIn } from "next-auth/react"; // 👈 NAYA: Google Sign-In ke liye
 import { toast } from "sonner";
 import { loginAction } from "@/server/actions/auth";
 
@@ -30,7 +31,6 @@ export default function LoginPage() {
         return;
       }
       
-      // 👇 Success par client-side redirect (no "Failed" message)
       toast.success("Welcome back!");
       router.push(callbackUrl);
       router.refresh();
@@ -149,8 +149,11 @@ export default function LoginPage() {
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            {/* 👇 NAYA: Sirf Google (full width, Apple hata diya) */}
-            <button className="w-full flex items-center justify-center gap-2 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2.5 rounded-lg transition-all text-[10px] font-medium">
+            {/* 👇 NAYA: Google Sign-In Button */}
+            <button 
+              onClick={() => signIn("google", { callbackUrl })}
+              className="w-full flex items-center justify-center gap-2 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2.5 rounded-lg transition-all text-[10px] font-medium"
+            >
               <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4" />
               Continue with Google
             </button>
