@@ -12,12 +12,5 @@ export const authConfig = {
     signIn: "/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
-  callbacks: {
-    async session({ session, token }) {
-      return session;
-    },
-    async jwt({ token, user }) {
-      return token;
-    },
-  },
+  trustHost: true, // 👈 Vercel ke liye zaroori
 } satisfies NextAuthConfig;
