@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
   createSession,
@@ -60,7 +59,8 @@ export async function registerAction(formData: FormData): Promise<AuthActionStat
     return { error: "Something went wrong. Please try again." };
   }
 
-  redirect("/");
+  // 👇 NAYA: redirect hata kar success return karo
+  return { success: true };
 }
 
 // ---------- Login ----------
@@ -111,11 +111,11 @@ export async function loginAction(formData: FormData): Promise<AuthActionState> 
     return { error: "Something went wrong. Please try again." };
   }
 
-  redirect("/");
+  // 👇 NAYA: redirect hata kar success return karo
+  return { success: true };
 }
 
 // ---------- Logout ----------
 export async function logoutAction() {
   await destroySession();
-  redirect("/login");
 }

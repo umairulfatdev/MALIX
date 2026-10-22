@@ -37,6 +37,7 @@ export default function RegisterPage() {
         return;
       }
       
+      // 👇 Success par client-side redirect (no "Failed" message)
       toast.success("Account created successfully!");
       router.push("/");
       router.refresh();
@@ -186,16 +187,11 @@ export default function RegisterPage() {
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button className="flex items-center justify-center gap-1.5 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2 rounded-lg transition-all text-[10px] font-medium">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-3 h-3" />
-                Google
-              </button>
-              <button className="flex items-center justify-center gap-1.5 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2 rounded-lg transition-all text-[10px] font-medium">
-                <svg className="w-3 h-3 fill-current text-white" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.09 2.22-.78 3.44-.8 1.86-.03 3.22.79 4.26 2.16-3.55 2.18-2.94 7.13.61 8.78-.71 1.7-1.8 3.16-3.39 4.03zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                Apple
-              </button>
-            </div>
+            {/* 👇 NAYA: Sirf Google (full width, Apple hata diya) */}
+            <button className="w-full flex items-center justify-center gap-2 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2.5 rounded-lg transition-all text-[10px] font-medium">
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4" />
+              Continue with Google
+            </button>
 
             <p className="text-center text-[9px] text-zinc-400 mt-4">
               Already have an account?{" "}

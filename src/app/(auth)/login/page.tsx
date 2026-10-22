@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation"; // 👈 useSearchParams import kiya
+import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, Zap, MonitorPlay } from "lucide-react";
 import { toast } from "sonner";
 import { loginAction } from "@/server/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // 👈 Search params se callbackUrl nikalo
-  const callbackUrl = searchParams.get("callbackUrl") || "/"; // 👈 Default home page
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -29,8 +29,9 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
+      
+      // 👇 Success par client-side redirect (no "Failed" message)
       toast.success("Welcome back!");
-      // 👇 NAYA: callbackUrl pe redirect karo
       router.push(callbackUrl);
       router.refresh();
     } catch {
@@ -57,14 +58,8 @@ export default function LoginPage() {
         
         {/* LEFT SIDE (Branding) */}
         <div className="hidden lg:flex w-1/2 flex-col justify-center pr-8">
-          
           <div className="mb-6">
-            <img 
-              src="/logo.png" 
-              alt="MALIX Logo" 
-              className="h-12 w-auto object-contain mb-3" 
-              onError={(e) => (e.currentTarget.style.display = 'none')} 
-            />
+            <img src="/logo.png" alt="MALIX Logo" className="h-12 w-auto object-contain mb-3" />
             <div className="text-zinc-400 text-[9px] tracking-[0.2em] font-medium flex items-center gap-2">
               MOVIES <span className="w-1 h-1 rounded-full bg-yellow-500" /> 
               DRAMAS <span className="w-1 h-1 rounded-full bg-yellow-500" /> 
@@ -154,16 +149,11 @@ export default function LoginPage() {
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button className="flex items-center justify-center gap-1.5 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2 rounded-lg transition-all text-[10px] font-medium">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-3 h-3" />
-                Google
-              </button>
-              <button className="flex items-center justify-center gap-1.5 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2 rounded-lg transition-all text-[10px] font-medium">
-                <svg className="w-3 h-3 fill-current text-white" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.09 2.22-.78 3.44-.8 1.86-.03 3.22.79 4.26 2.16-3.55 2.18-2.94 7.13.61 8.78-.71 1.7-1.8 3.16-3.39 4.03zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                Apple
-              </button>
-            </div>
+            {/* 👇 NAYA: Sirf Google (full width, Apple hata diya) */}
+            <button className="w-full flex items-center justify-center gap-2 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2.5 rounded-lg transition-all text-[10px] font-medium">
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4" />
+              Continue with Google
+            </button>
 
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
               <div className="flex flex-col items-center gap-0.5 text-zinc-500 hover:text-yellow-500 transition-colors cursor-pointer">
