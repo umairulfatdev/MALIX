@@ -1,9 +1,9 @@
-import { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import type { NextAuthConfig } from "next-auth";
+import Google from "next-auth/providers/google";
 
-export const authOptions: NextAuthOptions = {
+export const authConfig = {
   providers: [
-    GoogleProvider({
+    Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
@@ -11,11 +11,13 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Yahan hum Google se aaye user ko database mein save karenge
-      return true;
+    async session({ session, token }) {
+      return session;
+    },
+    async jwt({ token, user }) {
+      return token;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
-};
+} satisfies NextAuthConfig;

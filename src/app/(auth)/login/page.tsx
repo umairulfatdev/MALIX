@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, Zap, MonitorPlay } from "lucide-react";
-import { signIn } from "next-auth/react"; // 👈 NAYA: Google Sign-In ke liye
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { loginAction } from "@/server/actions/auth";
 
@@ -43,20 +43,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full flex bg-[#050505] relative overflow-hidden font-sans">
       
-      {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src="/auth-bg.png" 
-          alt="Background" 
-          className="w-full h-full object-cover opacity-50"
-        />
+        <img src="/auth-bg.png" alt="Background" className="w-full h-full object-cover opacity-50" />
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      {/* Main Container */}
       <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 flex flex-col lg:flex-row items-center justify-center gap-8 py-8">
         
-        {/* LEFT SIDE (Branding) */}
         <div className="hidden lg:flex w-1/2 flex-col justify-center pr-8">
           <div className="mb-6">
             <img src="/logo.png" alt="MALIX Logo" className="h-12 w-auto object-contain mb-3" />
@@ -79,7 +72,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* RIGHT SIDE (Form Box) */}
         <div className="w-full lg:w-auto flex flex-col items-center justify-center">
           
           <div className="w-full max-w-[500px] bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
@@ -149,7 +141,6 @@ export default function LoginPage() {
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            {/* 👇 NAYA: Google Sign-In Button */}
             <button 
               onClick={() => signIn("google", { callbackUrl })}
               className="w-full flex items-center justify-center gap-2 bg-[#151515] border border-white/10 hover:bg-white/5 text-white py-2.5 rounded-lg transition-all text-[10px] font-medium"
@@ -176,7 +167,6 @@ export default function LoginPage() {
             </div>
           </div>
           
-          {/* Signup Link */}
           <div className="mt-3 text-center text-[9px] text-zinc-400">
             Don't have an account?{" "}
             <Link href="/register" className="text-yellow-500 hover:text-yellow-400 font-bold">
