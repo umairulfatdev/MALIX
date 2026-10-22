@@ -43,13 +43,20 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full flex bg-[#050505] relative overflow-hidden font-sans">
       
+      {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <img src="/auth-bg.png" alt="Background" className="w-full h-full object-cover opacity-50" />
+        <img 
+          src="/auth-bg.png" 
+          alt="Background" 
+          className="w-full h-full object-cover opacity-50"
+        />
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
+      {/* Main Container */}
       <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 flex flex-col lg:flex-row items-center justify-center gap-8 py-8">
         
+        {/* LEFT SIDE (Branding) - Hidden on Mobile */}
         <div className="hidden lg:flex w-1/2 flex-col justify-center pr-8">
           <div className="mb-6">
             <img src="/logo.png" alt="MALIX Logo" className="h-12 w-auto object-contain mb-3" />
@@ -72,6 +79,7 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* RIGHT SIDE (Form Box) */}
         <div className="w-full lg:w-auto flex flex-col items-center justify-center">
           
           <div className="w-full max-w-[500px] bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
@@ -82,8 +90,9 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="relative">
+              {/* 👇 NAYA: Mobile pe alag lines, desktop pe grid */}
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
+                <div className="relative w-full">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
                   <input
                     name="email"
@@ -94,7 +103,7 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <div className="relative">
+                <div className="relative w-full">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
                   <input
                     name="password"
