@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Music, Video } from "lucide-react";
+import { Save } from "lucide-react";
 import type { ContentFormState } from "@/server/actions/admin/music";
 
 interface Props {
@@ -23,7 +23,11 @@ export default function MusicForm({ action, defaultValues }: Props) {
 
   return (
     <form action={formAction} className="space-y-6">
-      {state?.error && <div className="bg-red-500/10 border border-red-500/40 text-red-400 p-4 rounded-lg">{state.error}</div>}
+      {state?.error && (
+        <div className="bg-red-500/10 border border-red-500/40 text-red-400 p-4 rounded-lg">
+          {state.error}
+        </div>
+      )}
 
       <div>
         <label className="block text-sm text-zinc-300 mb-2">Title *</label>
@@ -71,7 +75,7 @@ export default function MusicForm({ action, defaultValues }: Props) {
       <div className="flex gap-3">
         <Link href="/admin/music" className="px-6 py-3 rounded-xl border border-white/10 text-white">Cancel</Link>
         <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-black font-bold rounded-xl">
-          <Save size={18} /> Save
+          <Save size={18} /> Save Music
         </button>
       </div>
     </form>
