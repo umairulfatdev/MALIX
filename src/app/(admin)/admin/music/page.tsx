@@ -49,7 +49,10 @@ export default async function AdminMusicPage() {
                     {item.status}
                   </span>
                 </td>
-                <td className="p-4 text-right">
+                <td className="p-4 text-right space-x-3">
+                  <Link href={`/admin/music/${item.id}/edit`} className="text-blue-500 hover:underline text-sm">
+                    Edit
+                  </Link>
                   <form action={async () => { "use server"; await deleteMusicAction(item.id); }} className="inline">
                     <button type="submit" className="text-red-500 hover:underline text-sm">Delete</button>
                   </form>
