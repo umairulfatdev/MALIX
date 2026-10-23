@@ -34,7 +34,10 @@ export async function GET(
 
     headers.set("Cache-Control", "public, max-age=3600");
 
-    return new NextResponse(response.body, { status: response.status, headers });
+    return new NextResponse(response.body, {
+      status: response.status,
+      headers,
+    });
   } catch (error) {
     console.error("Stream error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

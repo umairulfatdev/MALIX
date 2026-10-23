@@ -15,9 +15,7 @@ export async function GET(
       },
     });
 
-    if (!response.ok) {
-      return new NextResponse("Failed to fetch from Drive", { status: response.status });
-    }
+    if (!response.ok) return new NextResponse("Failed to fetch from Drive", { status: response.status });
 
     const headers = new Headers();
     headers.set("Content-Type", response.headers.get("Content-Type") || "application/octet-stream");
