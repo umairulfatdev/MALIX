@@ -32,7 +32,7 @@ export async function createMovieAction(
   const durationRaw = formData.get("duration") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
-  const quality = (formData.get("quality") as string) || "HD"; // 👈 QUALITY SAVED
+  const quality = (formData.get("quality") as string) || "HD";
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
@@ -58,12 +58,17 @@ export async function createMovieAction(
   if (existing) slug = `${slug}-${Date.now()}`;
 
   try {
-    const videoType = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") ? "youtube" : videoUrl.includes("vimeo.com") ? "vimeo" : "mp4";
+    const videoType = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")
+      ? "youtube"
+      : videoUrl.includes("vimeo.com")
+        ? "vimeo"
+        : "mp4";
 
+    // 1. Content create karo
     const content = await prisma.content.create({
       data: {
-        title, slug, description, shortDesc, type: "MOVIE", driveId,
-        releaseYear, duration, language, country, quality, // 👈 Quality save ho rahi hai
+        title, slug, description, shortDesc, type: "MOVIE",
+        releaseYear, duration, language, country, quality,
         posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
@@ -73,17 +78,57 @@ export async function createMovieAction(
       },
     });
 
+    // 2. Video source save karo
     if (videoUrl) {
-      await prisma.videoSource.create({ data: { contentId: content.id, url: videoUrl, type: videoType, isDefault: true } });
+      await prisma.videoSource.create({
+        data: {
+          contentId: content.id,
+          url: videoUrl,
+          type: videoType,
+          isDefault: true,
+        },
+      });
     }
 
-    const downloadOptions = [];
-    if (dl480) downloadOptions.push({ contentId: content.id, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
-    if (dl720) downloadOptions.push({ contentId: content.id, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
-    if (dl1080) downloadOptions.push({ contentId: content.id, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
-    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
+    // 3. Download options save karo
+    if (dl480) {
+      await prisma.downloadOption.create({
+        data: {
+          contentId: content.id,
+          quality: "480p",
+          fileUrl: dl480,
+          format: "mp4",
+          isAvailable: true,
+        },
+      });
+    }
+    if (dl720) {
+      await prisma.downloadOption.create({
+        data: {
+          contentId: content.id,
+          quality: "720p",
+          fileUrl: dl720,
+          format: "mp4",
+          isAvailable: true,
+        },
+      });
+    }
+    if (dl1080) {
+      await prisma.downloadOption.create({
+        data: {
+          contentId: content.id,
+          quality: "1080p",
+          fileUrl: dl1080,
+          format: "mp4",
+          isAvailable: true,
+        },
+      });
+    }
 
-    revalidatePath("/admin/movies"); revalidatePath("/movies"); revalidatePath("/");
+    revalidatePath("/admin/movies");
+    revalidatePath("/movies");
+    revalidatePath("/");
+
     return { success: true };
   } catch (error) {
     console.error("Create movie error:", error);
@@ -108,7 +153,7 @@ export async function updateMovieAction(
   const durationRaw = formData.get("duration") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
-  const quality = (formData.get("quality") as string) || "HD"; // 👈 QUALITY SAVED
+  const quality = (formData.get("quality") as string) || "HD";
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
@@ -132,10 +177,11 @@ export async function updateMovieAction(
     const existing = await prisma.content.findUnique({ where: { id: movieId } });
     if (!existing) return { error: "Movie not found" };
 
+    // 1. Content update karo
     await prisma.content.update({
       where: { id: movieId },
       data: {
-        title, description, shortDesc, driveId, releaseYear, duration, language, country, quality, // 👈 Quality update ho rahi hai
+        title, description, shortDesc, driveId, releaseYear, duration, language, country, quality,
         posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
@@ -144,20 +190,39 @@ export async function updateMovieAction(
       },
     });
 
+    // 2. Video source update karo
     if (videoUrl) {
       const videoType = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") ? "youtube" : videoUrl.includes("vimeo.com") ? "vimeo" : "mp4";
       await prisma.videoSource.deleteMany({ where: { contentId: movieId, episodeId: null } });
       await prisma.videoSource.create({ data: { contentId: movieId, url: videoUrl, type: videoType, isDefault: true } });
     }
 
+    // 3. Download options delete karo
     await prisma.downloadOption.deleteMany({ where: { contentId: movieId } });
-    const downloadOptions = [];
-    if (dl480) downloadOptions.push({ contentId: movieId, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
-    if (dl720) downloadOptions.push({ contentId: movieId, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
-    if (dl1080) downloadOptions.push({ contentId: movieId, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
-    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
 
-    revalidatePath("/admin/movies"); revalidatePath(`/admin/movies/${movieId}/edit`); revalidatePath("/movies"); revalidatePath(`/content/${existing.slug}`); revalidatePath("/");
+    // 4. Naye download options save karo
+    if (dl480) {
+      await prisma.downloadOption.create({
+        data: { contentId: movieId, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true },
+      });
+    }
+    if (dl720) {
+      await prisma.downloadOption.create({
+        data: { contentId: movieId, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true },
+      });
+    }
+    if (dl1080) {
+      await prisma.downloadOption.create({
+        data: { contentId: movieId, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true },
+      });
+    }
+
+    revalidatePath("/admin/movies");
+    revalidatePath(`/admin/movies/${movieId}/edit`);
+    revalidatePath("/movies");
+    revalidatePath(`/content/${existing.slug}`);
+    revalidatePath("/");
+
     return { success: true };
   } catch (error) {
     console.error("Update movie error:", error);
@@ -166,7 +231,7 @@ export async function updateMovieAction(
 }
 
 // ============================================================
-// DELETE / TOGGLE / GET (Purane functions)
+// DELETE / TOGGLE / GET
 // ============================================================
 export async function deleteMovieAction(movieId: string) {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
