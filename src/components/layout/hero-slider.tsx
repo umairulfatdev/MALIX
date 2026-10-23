@@ -25,7 +25,7 @@ export function HeroSlider({ movies }: { movies: SliderItem[] }) {
     if (movies.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % movies.length);
-    }, 5000); // 5000 ms = 5 seconds
+    }, 10000); // 5000 ms = 5 seconds
     return () => clearInterval(interval);
   }, [movies.length]);
 
