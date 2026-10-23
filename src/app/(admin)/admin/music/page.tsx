@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { getAdminMusic, deleteMusicAction } from "@/server/actions/admin/music";
-import { Music, Plus, Trash2, Edit } from "lucide-react";
+import { Music, Plus } from "lucide-react";
 
 export default async function AdminMusicPage() {
-  const { music } = await getAdminMusic({});
+  let music: any[] = [];
+  try {
+    music = await getAdminMusic();
+  } catch (e) {
+    console.error("Failed to load music:", e);
+  }
 
   return (
     <div className="space-y-6">
@@ -28,10 +33,14 @@ export default async function AdminMusicPage() {
             </tr>
           </thead>
           <tbody>
-            {music.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center text-zinc-500">No music yet</td></tr>
+            {(!music || music.length === 0) && (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-zinc-500">
+                  No music yet. Click "Add Music" to create one.
+                </td>
+              </tr>
             )}
-            {music.map((item) => (
+            {music?.map((item) => (
               <tr key={item.id} className="border-t border-white/5">
                 <td className="p-4 text-white">{item.title}</td>
                 <td className="p-4 text-zinc-300">{item.music?.artist || "—"}</td>
@@ -40,8 +49,7 @@ export default async function AdminMusicPage() {
                     {item.status}
                   </span>
                 </td>
-                <td className="p-4 text-right space-x-2">
-                  <Link href={`/admin/music/${item.id}/edit`} className="text-blue-500 hover:underline text-sm">Edit</Link>
+                <td className="p-4 text-right">
                   <form action={async () => { "use server"; await deleteMusicAction(item.id); }} className="inline">
                     <button type="submit" className="text-red-500 hover:underline text-sm">Delete</button>
                   </form>
