@@ -25,6 +25,7 @@ enum ContentType {
   DRAMA
   SERIES
   ANIME
+  MUSIC      // 👈 NAYA: Music/Songs ke liye
   DOCUMENTARY
   SHORT_FILM
   TRAILER
@@ -125,6 +126,26 @@ model Drive {
 }
 
 // ============================================================
+// AD (Advertisement)
+// ============================================================
+
+model Ad {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   // "banner", "pre-roll", "popup"
+  imageUrl    String?
+  videoUrl    String?
+  linkUrl     String?
+  position    String?  // "homepage", "watch", "detail"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([position])
+}
+
+// ============================================================
 // CONTENT
 // ============================================================
 
@@ -160,6 +181,7 @@ model Content {
   movie  Movie?
   drama  Drama?
   series Series?
+  music  Music?   // 👈 NAYA: Music relation
 
   genres       Genre[]
   casts        ContentCast[]
@@ -175,7 +197,7 @@ model Content {
 
   @@index([type])
   @@index([status])
-  @@index([status, type]) // 👈 NAYA INDEX
+  @@index([status, type])
   @@index([isFeatured])
   @@index([isTrending])
   @@index([title])
@@ -241,6 +263,22 @@ model Series {
   seasons      Season[]
 
   @@index([directorId])
+}
+
+// ============================================================
+// MUSIC (Songs/Albums)
+// ============================================================
+
+model Music {
+  id          String   @id @default(cuid())
+  contentId   String   @unique
+  artist      String?
+  album       String?
+  genre       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 }
 
 // ============================================================
