@@ -20,6 +20,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
 
   const rawUrl = url || src || "";
 
+  // 👇 NAYA: Sirf YouTube ke liye convert karo, baaki direct chalao
   const getProcessedUrl = (originalUrl: string) => {
     if (!originalUrl) return "";
     if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
@@ -29,6 +30,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
       else if (originalUrl.includes("embed/")) return originalUrl;
       return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
     }
+    // Baaki sab (Archive.org, MP4, etc.) direct chalao
     return originalUrl;
   };
 
@@ -108,11 +110,12 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
             autoPlay={!showIntro}
             playsInline
             preload="auto"
+            crossOrigin="anonymous"
             className="w-full h-full object-contain"
             onLoadedData={() => setIsLoading(false)}
             onError={() => {
               setIsLoading(false);
-              setError("Could not load video stream.");
+              setError("Could not load video stream. Please check the URL.");
             }}
           />
         )}
