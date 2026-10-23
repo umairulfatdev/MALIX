@@ -37,9 +37,10 @@ export default function MusicForm({ action, defaultValues }: Props) {
         <input name="title" required defaultValue={defaultValues?.title} className={inputClass} placeholder="Song name" />
       </div>
 
+      {/* 👇 Description ab OPTIONAL hai */}
       <div>
-        <label className="block text-sm text-zinc-300 mb-2">Description *</label>
-        <textarea name="description" required defaultValue={defaultValues?.description} className={`${inputClass} resize-none`} rows={3} placeholder="Song description" />
+        <label className="block text-sm text-zinc-300 mb-2">Description (Optional)</label>
+        <textarea name="description" defaultValue={defaultValues?.description} className={`${inputClass} resize-none`} rows={3} placeholder="Song description (optional)" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
