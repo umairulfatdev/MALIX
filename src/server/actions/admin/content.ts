@@ -16,6 +16,9 @@ export interface ContentFormState {
   success?: boolean;
 }
 
+// ============================================================
+// CREATE MOVIE
+// ============================================================
 export async function createMovieAction(
   _prev: ContentFormState,
   formData: FormData
@@ -65,7 +68,6 @@ export async function createMovieAction(
         posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
-        downloadEnabled: !!downloadUrl, // 👈 YAHAN FIX
         publishedAt: status === "PUBLISHED" ? new Date() : null,
         genres: genreIds.length ? { connect: genreIds.map((id) => ({ id })) } : undefined,
         movie: { create: {} },
@@ -78,7 +80,6 @@ export async function createMovieAction(
       });
     }
 
-    // 👇 DOWNLOAD SAVE
     if (downloadUrl) {
       await prisma.downloadOption.create({
         data: {
@@ -102,6 +103,9 @@ export async function createMovieAction(
   }
 }
 
+// ============================================================
+// UPDATE MOVIE
+// ============================================================
 export async function updateMovieAction(
   movieId: string,
   _prev: ContentFormState,
@@ -144,7 +148,6 @@ export async function updateMovieAction(
         posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
-        downloadEnabled: !!downloadUrl, // 👈 YAHAN FIX
         publishedAt: status === "PUBLISHED" && !existing.publishedAt ? new Date() : existing.publishedAt,
         genres: { set: [], connect: genreIds.map((id) => ({ id })) },
       },
@@ -156,7 +159,6 @@ export async function updateMovieAction(
       await prisma.videoSource.create({ data: { contentId: movieId, url: videoUrl, type: videoType, isDefault: true } });
     }
 
-    // 👇 DOWNLOAD UPDATE
     await prisma.downloadOption.deleteMany({ where: { contentId: movieId } });
     if (downloadUrl) {
       await prisma.downloadOption.create({
@@ -183,6 +185,9 @@ export async function updateMovieAction(
   }
 }
 
+// ============================================================
+// DELETE / TOGGLE / GET
+// ============================================================
 export async function deleteMovieAction(movieId: string) {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
