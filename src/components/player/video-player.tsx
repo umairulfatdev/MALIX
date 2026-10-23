@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Loader2, AlertCircle, Volume2, VolumeX, Download } from "lucide-react";
+import { Loader2, AlertCircle, Download } from "lucide-react";
 
 interface VideoPlayerProps {
   url?: string;
   src?: string;
-  poster?: string;
+  poster?: string | null; // 👈 YAHAN FIX HAI
   title?: string;
   downloadUrl?: string | null;
 }
@@ -62,7 +62,6 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
 
   return (
     <div className="w-full">
-      {/* Video Player */}
       <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-white/10 group shadow-2xl">
         
         {showIntro && (
@@ -111,11 +110,11 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
           <video
             ref={videoRef}
             src={finalUrl}
-            poster={poster}
+            poster={poster || undefined} // 👈 YAHAN FIX HAI
             controls
             autoPlay={!showIntro}
             playsInline
-            preload="auto" // 👈 NAYA: Video pehle se load karne ke liye
+            preload="auto"
             className="w-full h-full object-contain"
             onLoadedData={() => setIsLoading(false)}
             onError={() => {
@@ -126,7 +125,6 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
         )}
       </div>
 
-      {/* 👇 NAYA: Custom Download Button */}
       {downloadUrl && (
         <div className="mt-4 flex justify-end">
           <a

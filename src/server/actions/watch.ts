@@ -15,6 +15,7 @@ export interface WatchContent {
   posterUrl: string | null;
   avgRating: number | null;
   videoUrl: string | null;
+  downloadUrl: string | null; // 👈 NAYA: Download URL
   genres: { id: string; name: string; slug: string }[];
   seasonNumber?: number;
   episodeNumber?: number;
@@ -28,8 +29,6 @@ export interface WatchContent {
     duration: number;
     percentage: number;
   } | null;
-  // 👇 NAYA: Downloads add kiye
-  downloadOptions?: { quality: string; fileUrl: string; format: string }[]; 
 }
 
 export async function getWatchContent(
@@ -54,7 +53,7 @@ export async function getWatchContent(
         where: { isDefault: true },
         take: 1,
       },
-      downloadOptions: true, // 👈 NAYA: Downloads fetch kiye
+      downloadOptions: true, // 👈 NAYA: Download options fetch
     },
   });
 
@@ -119,6 +118,7 @@ export async function getWatchContent(
       posterUrl: content.posterUrl,
       avgRating: content.avgRating,
       videoUrl: foundEpisode.videoUrl,
+      downloadUrl: null, // Series ke liye abhi download nahi
       genres: content.genres,
       seasonNumber: foundSeason.seasonNumber,
       episodeNumber: foundEpisode.episodeNum,
@@ -128,12 +128,12 @@ export async function getWatchContent(
       nextEpisodeId,
       prevEpisodeId,
       initialProgress,
-      downloadOptions: [], // Series ke liye filhal download nahi hai
     };
   }
 
   // ============ MOVIE / DRAMA ============
   const videoUrl = content.videoSources[0]?.url || null;
+  const downloadUrl = content.downloadOptions[0]?.fileUrl || null; // 👈 NAYA: Download URL
 
   let initialProgress = null;
   if (user) {
@@ -165,14 +165,9 @@ export async function getWatchContent(
     posterUrl: content.posterUrl,
     avgRating: content.avgRating,
     videoUrl,
+    downloadUrl, // 👈 NAYA: Download URL return
     genres: content.genres,
     initialProgress,
-    // 👇 NAYA: Downloads frontend ko bheje
-    downloadOptions: content.downloadOptions.map((d) => ({
-      quality: d.quality,
-      fileUrl: d.fileUrl,
-      format: d.format,
-    })),
   };
 }
 
