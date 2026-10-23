@@ -138,7 +138,7 @@ model Content {
   releaseYear   Int?
   language      String?
   country       String?
-  quality       String?       @default("HD") // 👈 NAYA FIELD
+  quality       String?       @default("HD")
   duration      Int?
   posterUrl     String?
   backdropUrl   String?
@@ -175,6 +175,7 @@ model Content {
 
   @@index([type])
   @@index([status])
+  @@index([status, type]) // 👈 NAYA INDEX
   @@index([isFeatured])
   @@index([isTrending])
   @@index([title])
