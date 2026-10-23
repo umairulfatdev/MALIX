@@ -6,7 +6,7 @@ import { Loader2, AlertCircle, Download } from "lucide-react";
 interface VideoPlayerProps {
   url?: string;
   src?: string;
-  poster?: string | null; // 👈 YAHAN FIX HAI
+  poster?: string | null;
   title?: string;
   downloadUrl?: string | null;
 }
@@ -28,13 +28,6 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
       else if (originalUrl.includes("watch?v=")) videoId = originalUrl.split("watch?v=")[1]?.split("&")[0];
       else if (originalUrl.includes("embed/")) return originalUrl;
       return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    }
-    if (originalUrl.includes("drive.google.com")) {
-      const match = originalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) return `/api/stream/${match[1]}`;
-    }
-    if (/^[a-zA-Z0-9_-]{25,}$/.test(originalUrl) && !originalUrl.startsWith("http")) {
-      return `/api/stream/${originalUrl}`;
     }
     return originalUrl;
   };
@@ -110,7 +103,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
           <video
             ref={videoRef}
             src={finalUrl}
-            poster={poster || undefined} // 👈 YAHAN FIX HAI
+            poster={poster || undefined}
             controls
             autoPlay={!showIntro}
             playsInline
