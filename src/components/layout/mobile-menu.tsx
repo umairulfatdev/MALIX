@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/dramas", label: "Dramas" },
   { href: "/series", label: "Series" },
   { href: "/anime", label: "Anime" },
+  { href: "/music", label: "Music" },
 ];
 
 export function MobileMenu({ user }: { user: any }) {

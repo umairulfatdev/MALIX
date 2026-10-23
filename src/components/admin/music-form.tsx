@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Save } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import type { ContentFormState } from "@/server/actions/admin/music";
 
 interface Props {
@@ -15,11 +15,14 @@ const inputClass = "w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border border-white
 
 export default function MusicForm({ action, defaultValues }: Props) {
   const router = useRouter();
-  const [state, formAction] = useActionState(action, {});
+  const [state, formAction, isPending] = useActionState(action, {});
 
-  if (state?.success) {
-    router.push("/admin/music");
-  }
+  useEffect(() => {
+    if (state?.success) {
+      router.push("/admin/music");
+      router.refresh();
+    }
+  }, [state?.success, router]);
 
   return (
     <form action={formAction} className="space-y-6">
@@ -74,8 +77,9 @@ export default function MusicForm({ action, defaultValues }: Props) {
 
       <div className="flex gap-3">
         <Link href="/admin/music" className="px-6 py-3 rounded-xl border border-white/10 text-white">Cancel</Link>
-        <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-black font-bold rounded-xl">
-          <Save size={18} /> Save Music
+        <button type="submit" disabled={isPending} className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-black font-bold rounded-xl disabled:opacity-50">
+          {isPending ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          {isPending ? "Saving..." : "Save Music"}
         </button>
       </div>
     </form>
