@@ -15,12 +15,7 @@ export function WatchClient({ content }: WatchClientProps) {
 
   const handleProgressUpdate = useCallback(
     async (position: number, duration: number) => {
-      await saveWatchProgress(
-        content.id,
-        content.episodeId || null,
-        position,
-        duration
-      );
+      await saveWatchProgress(content.id, content.episodeId || null, position, duration);
     },
     [content.id, content.episodeId]
   );
@@ -36,6 +31,7 @@ export function WatchClient({ content }: WatchClientProps) {
       url={content.videoUrl || ""}
       poster={content.backdropUrl || content.posterUrl}
       title={content.title}
+      downloadUrl={content.downloadUrl || null} // 👈 NAYA
       contentId={content.id}
       episodeId={content.episodeId || null}
       initialPosition={content.initialProgress?.position || 0}
