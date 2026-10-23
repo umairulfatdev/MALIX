@@ -6,6 +6,7 @@ export default async function MusicPage() {
   const songs = await prisma.content.findMany({
     where: { type: "MUSIC", status: "PUBLISHED" },
     orderBy: { createdAt: "desc" },
+    include: { music: true },
   });
 
   return (
@@ -32,7 +33,7 @@ export default async function MusicPage() {
               </div>
             </div>
             <p className="mt-2 text-sm font-bold text-white truncate">{song.title}</p>
-            <p className="text-xs text-zinc-500">{song.releaseYear}</p>
+            <p className="text-xs text-zinc-500">{song.music?.artist}</p>
           </Link>
         ))}
       </div>
