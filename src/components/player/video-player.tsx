@@ -16,51 +16,19 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
   const [error, setError] = useState<string | null>(null);
   const [showIntro, setShowIntro] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const rawUrl = url || src || "";
-
-  // 👇 NAYA: Agar Archive.org ka link hai, toh usko IFRAME format mein badlo
-  const getProcessedUrl = (originalUrl: string) => {
-    if (!originalUrl) return "";
-    
-    // YouTube
-    if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
-      let videoId = "";
-      if (originalUrl.includes("youtu.be/")) videoId = originalUrl.split("youtu.be/")[1]?.split("?")[0];
-      else if (originalUrl.includes("watch?v=")) videoId = originalUrl.split("watch?v=")[1]?.split("&")[0];
-      else if (originalUrl.includes("embed/")) return originalUrl;
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    }
-
-    // Archive.org -> IFRAME Embed Link
-    if (originalUrl.includes("archive.org/download/")) {
-      // Example: https://archive.org/download/ITEM_ID/FILE.mp4
-      // Convert to: https://archive.org/embed/ITEM_ID
-      const parts = originalUrl.split("/download/")[1]?.split("/");
-      if (parts && parts[0]) {
-        return `https://archive.org/embed/${parts[0]}`;
-      }
-    }
-
-    // Direct MP4 (agar koi aur link ho)
-    return originalUrl;
-  };
-
-  const finalUrl = getProcessedUrl(rawUrl);
-
-  // Agar Archive.org ka embed link hai, toh iframe use karo
-  const isArchiveEmbed = finalUrl.includes("archive.org/embed/");
-  const isYouTube = finalUrl.includes("youtube.com/embed");
-  const isIframe = isArchiveEmbed || isYouTube;
+  const finalUrl = rawUrl ? encodeURI(rawUrl) : "";
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
-  }, [rawUrl]);
+  }, [finalUrl]);
 
   const handleIntroEnd = () => setShowIntro(false);
 
-  if (!rawUrl) {
+  if (!finalUrl) {
     return (
       <div className="aspect-video bg-black rounded-xl flex items-center justify-center border border-white/10">
         <div className="text-center text-zinc-500">
@@ -70,6 +38,8 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
       </div>
     );
   }
+
+  const isYouTube = finalUrl.includes("youtube.com") || finalUrl.includes("youtu.be");
 
   return (
     <div className="w-full">
@@ -96,8 +66,9 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
         )}
 
         {isLoading && !error && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+            <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-2" />
+            <p className="text-zinc-400 text-sm">Loading video... (This may take a moment)</p>
           </div>
         )}
 
@@ -109,16 +80,17 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
           </div>
         )}
 
-        {isIframe ? (
+        {isYouTube ? (
           <iframe
             src={finalUrl}
             className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             onLoad={() => setIsLoading(false)}
           />
         ) : (
           <video
+            ref={videoRef}
             src={finalUrl}
             poster={poster || undefined}
             controls
