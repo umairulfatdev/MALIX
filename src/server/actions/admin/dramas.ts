@@ -17,83 +17,35 @@ export interface DramaFormState {
   success?: boolean;
 }
 
-// ============================================================
-// GET DRAMAS FOR ADMIN
-// ============================================================
-
-export async function getAdminDramas(params: {
-  search?: string;
-  status?: string;
-  page?: number;
-  perPage?: number;
-}) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { dramas: [], total: 0, page: 1, totalPages: 0 };
-  }
-
+export async function getAdminDramas(params: { search?: string; status?: string; page?: number; perPage?: number }) {
+  try { await requireAdminAction(); } catch { return { dramas: [], total: 0, page: 1, totalPages: 0 }; }
   const { search, status, page = 1, perPage = 20 } = params;
   const where: any = { type: "DRAMA" };
-
-  if (search && search.trim()) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-    ];
-  }
+  if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }];
   if (status && status !== "ALL") where.status = status;
-
   const [dramas, total] = await Promise.all([
-    prisma.content.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-      include: {
-        genres: { select: { id: true, name: true, slug: true } },
-      },
-    }),
+    prisma.content.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * perPage, take: perPage, include: { genres: true } }),
     prisma.content.count({ where }),
   ]);
-
   return { dramas, total, page, totalPages: Math.ceil(total / perPage) };
 }
 
-// ============================================================
-// GET DRAMA FOR EDIT
-// ============================================================
-
 export async function getDramaForEdit(dramaId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return null;
-  }
-
-  return await prisma.content.findUnique({
+  try { await requireAdminAction(); } catch { return null; }
+  const content = await prisma.content.findUnique({
     where: { id: dramaId, type: "DRAMA" },
-    include: {
-      genres: { select: { id: true, name: true } },
-      drama: true,
-    },
+    include: { genres: true, drama: true, videoSources: true, downloadOptions: true },
   });
+  if (!content) return null;
+  const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
+  const dl480 = content.downloadOptions.find((d) => d.quality === "480p")?.fileUrl || null;
+  const dl720 = content.downloadOptions.find((d) => d.quality === "720p")?.fileUrl || null;
+  const dl1080 = content.downloadOptions.find((d) => d.quality === "1080p")?.fileUrl || null;
+  return { ...content, videoUrl, download480p: dl480, download720p: dl720, download1080p: dl1080 };
 }
 
-// ============================================================
-// CREATE DRAMA
-// ============================================================
-
-export async function createDramaAction(
-  _prev: DramaFormState,
-  formData: FormData
-): Promise<DramaFormState> {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+export async function createDramaAction(_prev: DramaFormState, formData: FormData): Promise<DramaFormState> {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const shortDesc = (formData.get("shortDesc") as string)?.trim() || null;
@@ -102,6 +54,8 @@ export async function createDramaAction(
   const totalEpsRaw = formData.get("totalEps") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
+  const quality = (formData.get("quality") as string) || "HD";
+  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
@@ -109,12 +63,12 @@ export async function createDramaAction(
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
 
-  if (!title || title.length < 2) {
-    return { error: "Title is required (min 2 characters)" };
-  }
-  if (!description || description.length < 10) {
-    return { error: "Description is required (min 10 characters)" };
-  }
+  const dl480 = (formData.get("download480p") as string)?.trim() || null;
+  const dl720 = (formData.get("download720p") as string)?.trim() || null;
+  const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
+
+  if (!title || title.length < 2) return { error: "Title is required" };
+  if (!description || description.length < 10) return { error: "Description is required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
   const duration = durationRaw ? parseInt(durationRaw) : null;
@@ -125,35 +79,30 @@ export async function createDramaAction(
   if (existing) slug = `${slug}-${Date.now()}`;
 
   try {
-    await prisma.content.create({
+    const content = await prisma.content.create({
       data: {
-        title,
-        slug,
-        description,
-        shortDesc,
-        type: "DRAMA",
-        releaseYear,
-        duration,
-        language,
-        country,
-        posterUrl,
-        backdropUrl,
-        trailerUrl,
+        title, slug, description, shortDesc, type: "DRAMA",
+        releaseYear, duration, language, country, quality,
+        posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
         publishedAt: status === "PUBLISHED" ? new Date() : null,
-        genres: genreIds.length
-          ? { connect: genreIds.map((id) => ({ id })) }
-          : undefined,
-        drama: {
-          create: { totalEps },
-        },
+        genres: genreIds.length ? { connect: genreIds.map((id) => ({ id })) } : undefined,
+        drama: { create: { totalEps } },
       },
     });
 
-    revalidatePath("/admin/dramas");
-    revalidatePath("/dramas");
-    revalidatePath("/");
+    if (videoUrl) {
+      await prisma.videoSource.create({ data: { contentId: content.id, url: videoUrl, type: "mp4", isDefault: true } });
+    }
+
+    const downloadOptions = [];
+    if (dl480) downloadOptions.push({ contentId: content.id, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
+    if (dl720) downloadOptions.push({ contentId: content.id, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
+    if (dl1080) downloadOptions.push({ contentId: content.id, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
+    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
+
+    revalidatePath("/admin/dramas"); revalidatePath("/dramas"); revalidatePath("/");
     redirect("/admin/dramas");
   } catch (error) {
     console.error("Create drama error:", error);
@@ -161,21 +110,8 @@ export async function createDramaAction(
   }
 }
 
-// ============================================================
-// UPDATE DRAMA
-// ============================================================
-
-export async function updateDramaAction(
-  dramaId: string,
-  _prev: DramaFormState,
-  formData: FormData
-): Promise<DramaFormState> {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+export async function updateDramaAction(dramaId: string, _prev: DramaFormState, formData: FormData): Promise<DramaFormState> {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const shortDesc = (formData.get("shortDesc") as string)?.trim() || null;
@@ -184,6 +120,8 @@ export async function updateDramaAction(
   const totalEpsRaw = formData.get("totalEps") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
+  const quality = (formData.get("quality") as string) || "HD";
+  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
@@ -191,55 +129,47 @@ export async function updateDramaAction(
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
 
+  const dl480 = (formData.get("download480p") as string)?.trim() || null;
+  const dl720 = (formData.get("download720p") as string)?.trim() || null;
+  const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
+
   if (!title || title.length < 2) return { error: "Title required" };
-  if (!description || description.length < 10)
-    return { error: "Description required (min 10 chars)" };
+  if (!description || description.length < 10) return { error: "Description required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
   const duration = durationRaw ? parseInt(durationRaw) : null;
   const totalEps = totalEpsRaw ? parseInt(totalEpsRaw) : 1;
 
   try {
-    const existing = await prisma.content.findUnique({
-      where: { id: dramaId },
-      include: { drama: true },
-    });
-
+    const existing = await prisma.content.findUnique({ where: { id: dramaId }, include: { drama: true } });
     if (!existing) return { error: "Drama not found" };
 
     await prisma.content.update({
       where: { id: dramaId },
       data: {
-        title,
-        description,
-        shortDesc,
-        releaseYear,
-        duration,
-        language,
-        country,
-        posterUrl,
-        backdropUrl,
-        trailerUrl,
+        title, description, shortDesc, releaseYear, duration, language, country, quality,
+        posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
-        publishedAt:
-          status === "PUBLISHED" && !existing.publishedAt
-            ? new Date()
-            : existing.publishedAt,
-        genres: {
-          set: [],
-          connect: genreIds.map((id) => ({ id })),
-        },
-        drama: existing.drama
-          ? { update: { totalEps } }
-          : { create: { totalEps } },
+        publishedAt: status === "PUBLISHED" && !existing.publishedAt ? new Date() : existing.publishedAt,
+        genres: { set: [], connect: genreIds.map((id) => ({ id })) },
+        drama: existing.drama ? { update: { totalEps } } : { create: { totalEps } },
       },
     });
 
-    revalidatePath("/admin/dramas");
-    revalidatePath(`/admin/dramas/${dramaId}/edit`);
-    revalidatePath("/dramas");
-    revalidatePath("/");
+    if (videoUrl) {
+      await prisma.videoSource.deleteMany({ where: { contentId: dramaId } });
+      await prisma.videoSource.create({ data: { contentId: dramaId, url: videoUrl, type: "mp4", isDefault: true } });
+    }
+
+    await prisma.downloadOption.deleteMany({ where: { contentId: dramaId } });
+    const downloadOptions = [];
+    if (dl480) downloadOptions.push({ contentId: dramaId, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
+    if (dl720) downloadOptions.push({ contentId: dramaId, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
+    if (dl1080) downloadOptions.push({ contentId: dramaId, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
+    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
+
+    revalidatePath("/admin/dramas"); revalidatePath(`/admin/dramas/${dramaId}/edit`); revalidatePath("/dramas"); revalidatePath("/");
     redirect("/admin/dramas");
   } catch (error) {
     console.error("Update drama error:", error);
@@ -247,71 +177,27 @@ export async function updateDramaAction(
   }
 }
 
-// ============================================================
-// DELETE DRAMA
-// ============================================================
-
 export async function deleteDramaAction(dramaId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
     await prisma.content.delete({ where: { id: dramaId } });
-    revalidatePath("/admin/dramas");
-    revalidatePath("/dramas");
-    revalidatePath("/");
+    revalidatePath("/admin/dramas"); revalidatePath("/dramas");
     return { success: true };
-  } catch (error) {
-    console.error("Delete drama error:", error);
-    return { error: "Failed to delete drama" };
-  }
+  } catch (error) { return { error: "Failed to delete drama" }; }
 }
 
-// ============================================================
-// TOGGLE PUBLISH
-// ============================================================
-
 export async function toggleDramaPublishAction(dramaId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
     const content = await prisma.content.findUnique({ where: { id: dramaId } });
     if (!content) return { error: "Not found" };
-
     const newStatus = content.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-
-    await prisma.content.update({
-      where: { id: dramaId },
-      data: {
-        status: newStatus,
-        publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt,
-      },
-    });
-
-    revalidatePath("/admin/dramas");
-    revalidatePath("/dramas");
-    revalidatePath("/");
+    await prisma.content.update({ where: { id: dramaId }, data: { status: newStatus, publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt } });
+    revalidatePath("/admin/dramas"); revalidatePath("/dramas");
     return { success: true, status: newStatus };
-  } catch (error) {
-    console.error("Toggle drama publish error:", error);
-    return { error: "Failed to toggle status" };
-  }
+  } catch (error) { return { error: "Failed to toggle status" }; }
 }
 
-// ============================================================
-// GET ALL GENRES
-// ============================================================
-
 export async function getAllGenresForDramaAdmin() {
-  return await prisma.genre.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, slug: true },
-  });
+  return await prisma.genre.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true } });
 }

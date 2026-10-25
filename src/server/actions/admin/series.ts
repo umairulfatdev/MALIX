@@ -17,105 +17,43 @@ export interface SeriesFormState {
   success?: boolean;
 }
 
-// ============================================================
-// GET SERIES FOR ADMIN
-// ============================================================
-
-export async function getAdminSeries(params: {
-  search?: string;
-  status?: string;
-  page?: number;
-  perPage?: number;
-}) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { series: [], total: 0, page: 1, totalPages: 0 };
-  }
-
+export async function getAdminSeries(params: { search?: string; status?: string; page?: number; perPage?: number }) {
+  try { await requireAdminAction(); } catch { return { series: [], total: 0, page: 1, totalPages: 0 }; }
   const { search, status, page = 1, perPage = 20 } = params;
   const where: any = { type: "SERIES" };
-
-  if (search && search.trim()) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-    ];
-  }
+  if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }];
   if (status && status !== "ALL") where.status = status;
-
   const [series, total] = await Promise.all([
-    prisma.content.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-      include: {
-        genres: { select: { id: true, name: true, slug: true } },
-        series: {
-          include: {
-            _count: { select: { seasons: true } },
-          },
-        },
-      },
-    }),
+    prisma.content.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * perPage, take: perPage, include: { genres: true, series: { include: { _count: { select: { seasons: true } } } } } }),
     prisma.content.count({ where }),
   ]);
-
   return { series, total, page, totalPages: Math.ceil(total / perPage) };
 }
 
-// ============================================================
-// GET SERIES FOR EDIT (with seasons + episodes)
-// ============================================================
-
 export async function getSeriesForEdit(seriesId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return null;
-  }
-
-  return await prisma.content.findUnique({
+  try { await requireAdminAction(); } catch { return null; }
+  const content = await prisma.content.findUnique({
     where: { id: seriesId, type: "SERIES" },
-    include: {
-      genres: { select: { id: true, name: true } },
-      series: {
-        include: {
-          seasons: {
-            orderBy: { seasonNumber: "asc" },
-            include: {
-              episodes: {
-                orderBy: { episodeNum: "asc" },
-              },
-            },
-          },
-        },
-      },
-    },
+    include: { genres: true, videoSources: true, downloadOptions: true, series: { include: { seasons: { include: { episodes: true } } } } },
   });
+  if (!content) return null;
+  const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
+  const dl480 = content.downloadOptions.find((d) => d.quality === "480p")?.fileUrl || null;
+  const dl720 = content.downloadOptions.find((d) => d.quality === "720p")?.fileUrl || null;
+  const dl1080 = content.downloadOptions.find((d) => d.quality === "1080p")?.fileUrl || null;
+  return { ...content, videoUrl, download480p: dl480, download720p: dl720, download1080p: dl1080 };
 }
 
-// ============================================================
-// CREATE SERIES
-// ============================================================
-
-export async function createSeriesAction(
-  _prev: SeriesFormState,
-  formData: FormData
-): Promise<SeriesFormState> {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+export async function createSeriesAction(_prev: SeriesFormState, formData: FormData): Promise<SeriesFormState> {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const shortDesc = (formData.get("shortDesc") as string)?.trim() || null;
   const releaseYearRaw = formData.get("releaseYear") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
+  const quality = (formData.get("quality") as string) || "HD";
+  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
@@ -123,12 +61,12 @@ export async function createSeriesAction(
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
 
-  if (!title || title.length < 2) {
-    return { error: "Title is required (min 2 characters)" };
-  }
-  if (!description || description.length < 10) {
-    return { error: "Description is required (min 10 characters)" };
-  }
+  const dl480 = (formData.get("download480p") as string)?.trim() || null;
+  const dl720 = (formData.get("download720p") as string)?.trim() || null;
+  const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
+
+  if (!title || title.length < 2) return { error: "Title is required" };
+  if (!description || description.length < 10) return { error: "Description is required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
 
@@ -137,34 +75,30 @@ export async function createSeriesAction(
   if (existing) slug = `${slug}-${Date.now()}`;
 
   try {
-    await prisma.content.create({
+    const content = await prisma.content.create({
       data: {
-        title,
-        slug,
-        description,
-        shortDesc,
-        type: "SERIES",
-        releaseYear,
-        language,
-        country,
-        posterUrl,
-        backdropUrl,
-        trailerUrl,
+        title, slug, description, shortDesc, type: "SERIES",
+        releaseYear, language, country, quality,
+        posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
         publishedAt: status === "PUBLISHED" ? new Date() : null,
-        genres: genreIds.length
-          ? { connect: genreIds.map((id) => ({ id })) }
-          : undefined,
-        series: {
-          create: { totalSeasons: 0 },
-        },
+        genres: genreIds.length ? { connect: genreIds.map((id) => ({ id })) } : undefined,
+        series: { create: { totalSeasons: 0 } },
       },
     });
 
-    revalidatePath("/admin/series");
-    revalidatePath("/series");
-    revalidatePath("/");
+    if (videoUrl) {
+      await prisma.videoSource.create({ data: { contentId: content.id, url: videoUrl, type: "mp4", isDefault: true } });
+    }
+
+    const downloadOptions = [];
+    if (dl480) downloadOptions.push({ contentId: content.id, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
+    if (dl720) downloadOptions.push({ contentId: content.id, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
+    if (dl1080) downloadOptions.push({ contentId: content.id, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
+    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
+
+    revalidatePath("/admin/series"); revalidatePath("/series"); revalidatePath("/");
     redirect("/admin/series");
   } catch (error) {
     console.error("Create series error:", error);
@@ -172,27 +106,16 @@ export async function createSeriesAction(
   }
 }
 
-// ============================================================
-// UPDATE SERIES
-// ============================================================
-
-export async function updateSeriesAction(
-  seriesId: string,
-  _prev: SeriesFormState,
-  formData: FormData
-): Promise<SeriesFormState> {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+export async function updateSeriesAction(seriesId: string, _prev: SeriesFormState, formData: FormData): Promise<SeriesFormState> {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const shortDesc = (formData.get("shortDesc") as string)?.trim() || null;
   const releaseYearRaw = formData.get("releaseYear") as string;
   const language = (formData.get("language") as string)?.trim() || null;
   const country = (formData.get("country") as string)?.trim() || null;
+  const quality = (formData.get("quality") as string) || "HD";
+  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
@@ -200,52 +123,45 @@ export async function updateSeriesAction(
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
 
+  const dl480 = (formData.get("download480p") as string)?.trim() || null;
+  const dl720 = (formData.get("download720p") as string)?.trim() || null;
+  const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
+
   if (!title || title.length < 2) return { error: "Title required" };
-  if (!description || description.length < 10)
-    return { error: "Description required" };
+  if (!description || description.length < 10) return { error: "Description required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
 
   try {
-    const existing = await prisma.content.findUnique({
-      where: { id: seriesId },
-      include: { series: true },
-    });
-
+    const existing = await prisma.content.findUnique({ where: { id: seriesId }, include: { series: true } });
     if (!existing) return { error: "Series not found" };
 
     await prisma.content.update({
       where: { id: seriesId },
       data: {
-        title,
-        description,
-        shortDesc,
-        releaseYear,
-        language,
-        country,
-        posterUrl,
-        backdropUrl,
-        trailerUrl,
+        title, description, shortDesc, releaseYear, language, country, quality,
+        posterUrl, backdropUrl, trailerUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
-        publishedAt:
-          status === "PUBLISHED" && !existing.publishedAt
-            ? new Date()
-            : existing.publishedAt,
-        genres: {
-          set: [],
-          connect: genreIds.map((id) => ({ id })),
-        },
-        series: existing.series
-          ? { update: {} }
-          : { create: { totalSeasons: 0 } },
+        publishedAt: status === "PUBLISHED" && !existing.publishedAt ? new Date() : existing.publishedAt,
+        genres: { set: [], connect: genreIds.map((id) => ({ id })) },
+        series: existing.series ? { update: {} } : { create: { totalSeasons: 0 } },
       },
     });
 
-    revalidatePath("/admin/series");
-    revalidatePath(`/admin/series/${seriesId}/edit`);
-    revalidatePath("/series");
-    revalidatePath("/");
+    if (videoUrl) {
+      await prisma.videoSource.deleteMany({ where: { contentId: seriesId } });
+      await prisma.videoSource.create({ data: { contentId: seriesId, url: videoUrl, type: "mp4", isDefault: true } });
+    }
+
+    await prisma.downloadOption.deleteMany({ where: { contentId: seriesId } });
+    const downloadOptions = [];
+    if (dl480) downloadOptions.push({ contentId: seriesId, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
+    if (dl720) downloadOptions.push({ contentId: seriesId, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
+    if (dl1080) downloadOptions.push({ contentId: seriesId, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
+    if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
+
+    revalidatePath("/admin/series"); revalidatePath(`/admin/series/${seriesId}/edit`); revalidatePath("/series"); revalidatePath("/");
     redirect("/admin/series");
   } catch (error) {
     console.error("Update series error:", error);
@@ -253,286 +169,27 @@ export async function updateSeriesAction(
   }
 }
 
-// ============================================================
-// DELETE SERIES
-// ============================================================
-
 export async function deleteSeriesAction(seriesId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
     await prisma.content.delete({ where: { id: seriesId } });
-    revalidatePath("/admin/series");
-    revalidatePath("/series");
-    revalidatePath("/");
+    revalidatePath("/admin/series"); revalidatePath("/series");
     return { success: true };
-  } catch (error) {
-    console.error("Delete series error:", error);
-    return { error: "Failed to delete series" };
-  }
+  } catch (error) { return { error: "Failed to delete series" }; }
 }
 
-// ============================================================
-// TOGGLE PUBLISH
-// ============================================================
-
 export async function toggleSeriesPublishAction(seriesId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
     const content = await prisma.content.findUnique({ where: { id: seriesId } });
     if (!content) return { error: "Not found" };
-
     const newStatus = content.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-
-    await prisma.content.update({
-      where: { id: seriesId },
-      data: {
-        status: newStatus,
-        publishedAt:
-          newStatus === "PUBLISHED" ? new Date() : content.publishedAt,
-      },
-    });
-
-    revalidatePath("/admin/series");
-    revalidatePath("/series");
-    revalidatePath("/");
+    await prisma.content.update({ where: { id: seriesId }, data: { status: newStatus, publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt } });
+    revalidatePath("/admin/series"); revalidatePath("/series");
     return { success: true, status: newStatus };
-  } catch (error) {
-    console.error("Toggle series publish error:", error);
-    return { error: "Failed to toggle status" };
-  }
+  } catch (error) { return { error: "Failed to toggle status" }; }
 }
-
-// ============================================================
-// SEASONS
-// ============================================================
-
-export interface SeasonFormState {
-  error?: string;
-  success?: boolean;
-}
-
-export async function createSeasonAction(
-  seriesId: string,
-  _prev: SeasonFormState,
-  formData: FormData
-): Promise<SeasonFormState> {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
-  const seasonNumberRaw = formData.get("seasonNumber") as string;
-  const title = (formData.get("title") as string)?.trim() || null;
-  const description = (formData.get("description") as string)?.trim() || null;
-  const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
-  const releaseYearRaw = formData.get("releaseYear") as string;
-
-  const seasonNumber = seasonNumberRaw ? parseInt(seasonNumberRaw) : 1;
-  const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
-
-  if (seasonNumber < 1) {
-    return { error: "Season number must be at least 1" };
-  }
-
-  try {
-    // Get series internal ID
-    const seriesContent = await prisma.content.findUnique({
-      where: { id: seriesId },
-      include: { series: true },
-    });
-
-    if (!seriesContent || !seriesContent.series) {
-      return { error: "Series not found" };
-    }
-
-    // Check unique season number
-    const existing = await prisma.season.findFirst({
-      where: {
-        seriesId: seriesContent.series.id,
-        seasonNumber,
-      },
-    });
-
-    if (existing) {
-      return { error: `Season ${seasonNumber} already exists` };
-    }
-
-    await prisma.season.create({
-      data: {
-        seriesId: seriesContent.series.id,
-        seasonNumber,
-        title,
-        description,
-        posterUrl,
-        releaseYear,
-        status: "PUBLISHED",
-      },
-    });
-
-    // Update series totalSeasons
-    const count = await prisma.season.count({
-      where: { seriesId: seriesContent.series.id },
-    });
-    await prisma.series.update({
-      where: { id: seriesContent.series.id },
-      data: { totalSeasons: count },
-    });
-
-    revalidatePath(`/admin/series/${seriesId}/edit`);
-    revalidatePath(`/series`);
-    revalidatePath(`/content/${seriesContent.slug}`);
-
-    return { success: true };
-  } catch (error) {
-    console.error("Create season error:", error);
-    return { error: "Failed to create season" };
-  }
-}
-
-export async function deleteSeasonAction(seasonId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
-  try {
-    const season = await prisma.season.findUnique({
-      where: { id: seasonId },
-      include: { series: { include: { content: true } } },
-    });
-
-    if (!season) return { error: "Season not found" };
-
-    const seriesId = season.seriesId;
-
-    await prisma.season.delete({ where: { id: seasonId } });
-
-    // Update series totalSeasons
-    const count = await prisma.season.count({ where: { seriesId } });
-    await prisma.series.update({
-      where: { id: seriesId },
-      data: { totalSeasons: count },
-    });
-
-    revalidatePath(`/admin/series/${season.series.content.id}/edit`);
-    revalidatePath(`/series`);
-
-    return { success: true };
-  } catch (error) {
-    console.error("Delete season error:", error);
-    return { error: "Failed to delete season" };
-  }
-}
-
-// ============================================================
-// EPISODES
-// ============================================================
-
-export async function createEpisodeAction(
-  seasonId: string,
-  formData: FormData
-) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
-  const episodeNumRaw = formData.get("episodeNum") as string;
-  const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim() || null;
-  const thumbnailUrl =
-    (formData.get("thumbnailUrl") as string)?.trim() || null;
-  const durationRaw = formData.get("duration") as string;
-  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
-  const status = (formData.get("status") as string) || "DRAFT";
-
-  const episodeNum = episodeNumRaw ? parseInt(episodeNumRaw) : 1;
-  const duration = durationRaw ? parseInt(durationRaw) : null;
-
-  if (!title || title.length < 1) {
-    return { error: "Episode title required" };
-  }
-
-  try {
-    await prisma.episode.create({
-      data: {
-        seasonId,
-        episodeNum,
-        title,
-        description,
-        thumbnailUrl,
-        duration,
-        videoUrl,
-        status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
-      },
-    });
-
-    const season = await prisma.season.findUnique({
-      where: { id: seasonId },
-      include: { series: { include: { content: true } } },
-    });
-
-    if (season) {
-      revalidatePath(`/admin/series/${season.series.content.id}/edit`);
-      revalidatePath(`/content/${season.series.content.slug}`);
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Create episode error:", error);
-    return { error: "Failed to create episode" };
-  }
-}
-
-export async function deleteEpisodeAction(episodeId: string) {
-  try {
-    await requireAdminAction();
-  } catch {
-    return { error: "Unauthorized" };
-  }
-
-  try {
-    const episode = await prisma.episode.findUnique({
-      where: { id: episodeId },
-      include: {
-        season: { include: { series: { include: { content: true } } } },
-      },
-    });
-
-    await prisma.episode.delete({ where: { id: episodeId } });
-
-    if (episode?.season) {
-      revalidatePath(`/admin/series/${episode.season.series.content.id}/edit`);
-      revalidatePath(`/content/${episode.season.series.content.slug}`);
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Delete episode error:", error);
-    return { error: "Failed to delete episode" };
-  }
-}
-
-// ============================================================
-// GENRES
-// ============================================================
 
 export async function getAllGenresForSeriesAdmin() {
-  return await prisma.genre.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, slug: true },
-  });
+  return await prisma.genre.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true } });
 }
