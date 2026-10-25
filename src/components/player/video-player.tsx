@@ -18,33 +18,18 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // 👇 NAYA: URL ko encode karo taake %5B aur %5D toot na jayein
   const rawUrl = url || src || "";
-
-  // 👇 NAYA: Sirf YouTube ke liye convert, baaki sab DIRECT
-  const getProcessedUrl = (originalUrl: string) => {
-    if (!originalUrl) return "";
-    if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
-      let videoId = "";
-      if (originalUrl.includes("youtu.be/")) videoId = originalUrl.split("youtu.be/")[1]?.split("?")[0];
-      else if (originalUrl.includes("watch?v=")) videoId = originalUrl.split("watch?v=")[1]?.split("&")[0];
-      else if (originalUrl.includes("embed/")) return originalUrl;
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    }
-    // Archive.org, MP4, etc. direct chalao
-    return originalUrl;
-  };
-
-  const finalUrl = getProcessedUrl(rawUrl);
-  const isIframe = finalUrl.includes("youtube.com/embed") || finalUrl.includes("player.vimeo.com");
+  const finalUrl = rawUrl ? encodeURI(rawUrl) : "";
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
-  }, [rawUrl]);
+  }, [finalUrl]);
 
   const handleIntroEnd = () => setShowIntro(false);
 
-  if (!rawUrl) {
+  if (!finalUrl) {
     return (
       <div className="aspect-video bg-black rounded-xl flex items-center justify-center border border-white/10">
         <div className="text-center text-zinc-500">
@@ -54,6 +39,8 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
       </div>
     );
   }
+
+  const isYouTube = finalUrl.includes("youtube.com") || finalUrl.includes("youtu.be");
 
   return (
     <div className="w-full">
@@ -93,7 +80,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
           </div>
         )}
 
-        {isIframe ? (
+        {isYouTube ? (
           <iframe
             src={finalUrl}
             className="w-full h-full border-0"
