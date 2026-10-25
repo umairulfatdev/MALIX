@@ -95,7 +95,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
             controls
             autoPlay={!showIntro}
             playsInline
-            preload="auto"
+            preload="metadata"
             className="w-full h-full object-contain"
             onLoadedData={() => setIsLoading(false)}
             onError={() => {
