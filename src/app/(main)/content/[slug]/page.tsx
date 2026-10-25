@@ -15,34 +15,13 @@ export default async function ContentDetailPage({
     include: {
       genres: true,
       videoSources: { where: { isDefault: true }, take: 1 },
-      downloadOptions: true,
+      downloadOptions: true, // 👈 NAYA: Download options fetch
     },
   });
 
   if (!content) notFound();
 
-  // 👇 NAYA: Google Drive ka link detect karne ka function
-  const getDownloadUrl = (url: string) => {
-    if (!url) return "";
-    
-    // Agar Google Drive ka link hai
-    if (url.includes("drive.google.com")) {
-      // File ID nikaalo
-      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        return `/api/download/${match[1]}`;
-      }
-    }
-    
-    // Agar sirf raw ID hai
-    if (/^[a-zA-Z0-9_-]{25,}$/.test(url) && !url.startsWith("http")) {
-      return `/api/download/${url}`;
-    }
-
-    // Warna direct URL return karo
-    return url;
-  };
-
+  // 👇 NAYA: Check karo ke downloadOptions hain ya nahi
   const hasDownloads = content.downloadOptions && content.downloadOptions.length > 0;
 
   return (
@@ -79,8 +58,12 @@ export default async function ContentDetailPage({
                   <span className="font-bold text-white">{content.avgRating.toFixed(1)}</span>
                 </div>
               )}
-              {content.releaseYear && <span className="flex items-center gap-1"><Calendar size={16} /> {content.releaseYear}</span>}
-              {content.duration && <span className="flex items-center gap-1"><Clock size={16} /> {content.duration} min</span>}
+              {content.releaseYear && (
+                <span className="flex items-center gap-1"><Calendar size={16} /> {content.releaseYear}</span>
+              )}
+              {content.duration && (
+                <span className="flex items-center gap-1"><Clock size={16} /> {content.duration} min</span>
+              )}
               {content.quality && (
                 <span className="px-2 py-0.5 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-500 text-xs font-bold">
                   {content.quality}
@@ -103,6 +86,7 @@ export default async function ContentDetailPage({
                 <Play size={20} className="fill-black" /> Watch Now
               </Link>
 
+              {/* 👇 DOWNLOAD BUTTON LOGIC */}
               {hasDownloads ? (
                 <div className="relative group">
                   <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition font-semibold">
@@ -110,13 +94,7 @@ export default async function ContentDetailPage({
                   </button>
                   <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     {content.downloadOptions.map((opt) => (
-                      <a 
-                        key={opt.id} 
-                        href={getDownloadUrl(opt.fileUrl)} // 👈 NAYA: API ke through download
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="block px-4 py-3 text-sm hover:bg-white/5 border-b border-white/5 last:border-0 font-medium"
-                      >
+                      <a key={opt.id} href={opt.fileUrl} target="_blank" rel="noopener noreferrer" className="block px-4 py-3 text-sm hover:bg-white/5 border-b border-white/5 last:border-0 font-medium">
                         {opt.quality} ({opt.format})
                       </a>
                     ))}
