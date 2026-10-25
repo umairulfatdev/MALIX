@@ -46,6 +46,7 @@ export async function createAnimeAction(
 
   if (!title || title.length < 2) return { error: "Title is required" };
   if (!description || description.length < 10) return { error: "Description is required" };
+  if (!videoUrl) return { error: "Video URL is required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
 
@@ -158,32 +159,8 @@ export async function updateAnimeAction(
 }
 
 // ============================================================
-// DELETE / TOGGLE / GET (PURANE FUNCTIONS)
+// GET / DELETE / TOGGLE
 // ============================================================
-export async function deleteAnimeAction(animeId: string) {
-  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
-  try {
-    await prisma.content.delete({ where: { id: animeId } });
-    revalidatePath("/admin/anime"); revalidatePath("/anime");
-    return { success: true };
-  } catch (error) { return { error: "Failed to delete anime" }; }
-}
-
-export async function toggleAnimePublishAction(animeId: string) {
-  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
-  try {
-    const content = await prisma.content.findUnique({ where: { id: animeId } });
-    if (!content) return { error: "Not found" };
-    const newStatus = content.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-    await prisma.content.update({
-      where: { id: animeId },
-      data: { status: newStatus, publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt },
-    });
-    revalidatePath("/admin/anime"); revalidatePath("/anime");
-    return { success: true, status: newStatus };
-  } catch (error) { return { error: "Failed to toggle status" }; }
-}
-
 export async function getAdminAnime(params: { search?: string; status?: string; page?: number; perPage?: number }) {
   try { await requireAdminAction(); } catch { return { anime: [], total: 0, page: 1, totalPages: 0 }; }
   const { search, status, page = 1, perPage = 20 } = params;
@@ -211,7 +188,30 @@ export async function getAnimeForEdit(animeId: string) {
   return { ...content, videoUrl, download480p: dl480, download720p: dl720, download1080p: dl1080 };
 }
 
-// 👇 YEH FUNCTION MISSING THA, AB ADD KAR DIYA HAI 👇
+export async function deleteAnimeAction(animeId: string) {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  try {
+    await prisma.content.delete({ where: { id: animeId } });
+    revalidatePath("/admin/anime"); revalidatePath("/anime");
+    return { success: true };
+  } catch (error) { return { error: "Failed to delete anime" }; }
+}
+
+export async function toggleAnimePublishAction(animeId: string) {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  try {
+    const content = await prisma.content.findUnique({ where: { id: animeId } });
+    if (!content) return { error: "Not found" };
+    const newStatus = content.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+    await prisma.content.update({
+      where: { id: animeId },
+      data: { status: newStatus, publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt },
+    });
+    revalidatePath("/admin/anime"); revalidatePath("/anime");
+    return { success: true, status: newStatus };
+  } catch (error) { return { error: "Failed to toggle status" }; }
+}
+
 export async function getAllGenresForAnimeAdmin() {
   return await prisma.genre.findMany({
     orderBy: { name: "asc" },
