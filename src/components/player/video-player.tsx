@@ -19,16 +19,15 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const rawUrl = url || src || "";
-  const finalUrl = rawUrl ? encodeURI(rawUrl) : "";
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
-  }, [finalUrl]);
+  }, [rawUrl]);
 
   const handleIntroEnd = () => setShowIntro(false);
 
-  if (!finalUrl) {
+  if (!rawUrl) {
     return (
       <div className="aspect-video bg-black rounded-xl flex items-center justify-center border border-white/10">
         <div className="text-center text-zinc-500">
@@ -39,7 +38,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
     );
   }
 
-  const isYouTube = finalUrl.includes("youtube.com") || finalUrl.includes("youtu.be");
+  const isYouTube = rawUrl.includes("youtube.com") || rawUrl.includes("youtu.be");
 
   return (
     <div className="w-full">
@@ -68,7 +67,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
         {isLoading && !error && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-2" />
-            <p className="text-zinc-400 text-sm">Loading video... (This may take a moment)</p>
+            <p className="text-zinc-400 text-sm">Loading video...</p>
           </div>
         )}
 
@@ -82,7 +81,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
 
         {isYouTube ? (
           <iframe
-            src={finalUrl}
+            src={rawUrl}
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -91,7 +90,7 @@ export function VideoPlayer({ url, src, poster, downloadUrl }: VideoPlayerProps)
         ) : (
           <video
             ref={videoRef}
-            src={finalUrl}
+            src={rawUrl}
             poster={poster || undefined}
             controls
             autoPlay={!showIntro}
