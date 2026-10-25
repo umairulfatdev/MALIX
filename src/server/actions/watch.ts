@@ -15,7 +15,7 @@ export interface WatchContent {
   posterUrl: string | null;
   avgRating: number | null;
   videoUrl: string | null;
-  downloadUrl: string | null; // 👈 NAYA: Download URL
+  downloadUrl: string | null;
   genres: { id: string; name: string; slug: string }[];
   seasonNumber?: number;
   episodeNumber?: number;
@@ -118,7 +118,7 @@ export async function getWatchContent(
       posterUrl: content.posterUrl,
       avgRating: content.avgRating,
       videoUrl: foundEpisode.videoUrl,
-      downloadUrl: null, // Series ke liye abhi download nahi
+      downloadUrl: null, // Series ke liye download nahi
       genres: content.genres,
       seasonNumber: foundSeason.seasonNumber,
       episodeNumber: foundEpisode.episodeNum,
@@ -131,9 +131,9 @@ export async function getWatchContent(
     };
   }
 
-  // ============ MOVIE / DRAMA ============
+  // ============ MOVIE / DRAMA / ANIME / MUSIC ============
   const videoUrl = content.videoSources[0]?.url || null;
-  const downloadUrl = content.downloadOptions[0]?.fileUrl || null; // 👈 NAYA: Download URL
+  const downloadUrl = content.downloadOptions[0]?.fileUrl || null; // 👈 NAYA
 
   let initialProgress = null;
   if (user) {
@@ -165,7 +165,7 @@ export async function getWatchContent(
     posterUrl: content.posterUrl,
     avgRating: content.avgRating,
     videoUrl,
-    downloadUrl, // 👈 NAYA: Download URL return
+    downloadUrl, // 👈 NAYA
     genres: content.genres,
     initialProgress,
   };
