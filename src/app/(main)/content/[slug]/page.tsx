@@ -91,11 +91,30 @@ export default async function ContentDetailPage({
                     <Download size={18} /> Download
                   </button>
                   <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    {content.downloadOptions.map((opt) => (
-                      <a key={opt.id} href={opt.fileUrl} target="_blank" rel="noopener noreferrer" className="block px-4 py-3 text-sm hover:bg-white/5 border-b border-white/5 last:border-0 font-medium">
-                        {opt.quality} ({opt.format})
-                      </a>
-                    ))}
+                    {content.downloadOptions.map((opt) => {
+                      // 👇 GOOGLE DRIVE DOWNLOAD LOGIC 👇
+                      const isDrive = opt.fileUrl.includes("drive.google.com");
+                      let downloadUrl = opt.fileUrl;
+
+                      if (isDrive) {
+                        const match = opt.fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                          downloadUrl = `/api/download/${match[1]}`;
+                        }
+                      }
+
+                      return (
+                        <a
+                          key={opt.id}
+                          href={downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-4 py-3 text-sm hover:bg-white/5 border-b border-white/5 last:border-0 font-medium"
+                        >
+                          {opt.quality} ({opt.format})
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
