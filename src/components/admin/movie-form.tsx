@@ -5,7 +5,6 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Loader2, Video, HardDrive, Download } from "lucide-react";
-import { toast } from "sonner"; // 👈 NAYA: Toast import kiya
 import {
   createMovieAction,
   updateMovieAction,
@@ -96,17 +95,12 @@ export function MovieForm({
 
   const [state, formAction] = useActionState(action, initialState);
 
-  // 👇 NAYA: Success aur Error ke liye toast
   useEffect(() => {
     if (state?.success) {
-      toast.success("Movie saved successfully!");
       router.push("/admin/movies");
       router.refresh();
     }
-    if (state?.error) {
-      toast.error(state.error);
-    }
-  }, [state, router]);
+  }, [state?.success, router]);
 
   const selectedGenres = initialData?.genres?.map((g) => g.id) || [];
 
@@ -130,17 +124,11 @@ export function MovieForm({
             <h1 className="text-2xl font-bold text-white">
               {mode === "create" ? "Add New Movie" : "Edit Movie"}
             </h1>
-            <p className="text-sm text-zinc-500">
-              {mode === "create"
-                ? "Fill in the details to add a movie"
-                : "Update the movie details below"}
-            </p>
           </div>
         </div>
         <SubmitButton mode={mode} />
       </div>
 
-      {/* Basic Info */}
       <Section title="Basic Information">
         <Field label="Title" required>
           <input name="title" defaultValue={initialData?.title || ""} required minLength={2} className={inputClass} placeholder="e.g., The Dark Horizon" />
@@ -153,7 +141,6 @@ export function MovieForm({
         </Field>
       </Section>
 
-      {/* Details */}
       <Section title="Details">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Field label="Release Year">
@@ -180,27 +167,7 @@ export function MovieForm({
         </Field>
       </Section>
 
-      {/* Video */}
-      <Section title="🎬 Video Sources (Zaroori)">
-        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 mb-4">
-          <p className="text-xs text-yellow-400 font-semibold mb-2">💡 VIDEO URL KAISE LAAYEIN:</p>
-          <ul className="text-xs text-zinc-400 space-y-1 list-disc list-inside">
-            <li><strong>YouTube:</strong> https://www.youtube.com/embed/VIDEO_ID</li>
-            <li><strong>Vimeo:</strong> https://player.vimeo.com/video/VIDEO_ID</li>
-            <li><strong>MP4:</strong> https://example.com/movie.mp4</li>
-          </ul>
-        </div>
-        <Field label="Storage Drive" hint="Agar Google Drive se video chalani hai, to yahan select karein">
-          <div className="relative">
-            <HardDrive size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-yellow-500 z-10" />
-            <select name="driveId" defaultValue={initialData?.driveId || ""} className={`${inputClass} pl-12 appearance-none cursor-pointer`}>
-              <option value="" className="bg-[#1a1a1a] text-white">-- Default / No Drive --</option>
-              {drives.map((drive) => (
-                <option key={drive.id} value={drive.id} className="bg-[#1a1a1a] text-white">{drive.name}</option>
-              ))}
-            </select>
-          </div>
-        </Field>
+      <Section title="🎬 Video Sources">
         <Field label="Video URL (Streaming)" required>
           <div className="relative">
             <Video size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-yellow-500 z-10" />
@@ -209,7 +176,6 @@ export function MovieForm({
         </Field>
       </Section>
 
-      {/* Downloads */}
       <Section title="⬇️ Download Links (Optional)">
         <Field label="Download URL (480p)">
           <div className="relative">
@@ -217,12 +183,14 @@ export function MovieForm({
             <input name="download480p" type="url" defaultValue={initialData?.download480p || ""} className={`${inputClass} pl-12`} placeholder="https://..." />
           </div>
         </Field>
+        
         <Field label="Download URL (720p)">
           <div className="relative">
             <Download size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 z-10" />
             <input name="download720p" type="url" defaultValue={initialData?.download720p || ""} className={`${inputClass} pl-12`} placeholder="https://..." />
           </div>
         </Field>
+
         <Field label="Download URL (1080p)">
           <div className="relative">
             <Download size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 z-10" />
@@ -231,14 +199,12 @@ export function MovieForm({
         </Field>
       </Section>
 
-      {/* Media URLs */}
       <Section title="Media URLs">
         <Field label="Poster URL"><input name="posterUrl" type="url" defaultValue={initialData?.posterUrl || ""} className={inputClass} placeholder="https://..." /></Field>
         <Field label="Backdrop URL"><input name="backdropUrl" type="url" defaultValue={initialData?.backdropUrl || ""} className={inputClass} placeholder="https://..." /></Field>
         <Field label="Trailer URL"><input name="trailerUrl" type="url" defaultValue={initialData?.trailerUrl || ""} className={inputClass} placeholder="https://..." /></Field>
       </Section>
 
-      {/* Genres */}
       <Section title="Genres">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {genres.map((genre) => (
@@ -250,14 +216,13 @@ export function MovieForm({
         </div>
       </Section>
 
-      {/* Settings */}
       <Section title="Settings">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Status">
             <select name="status" defaultValue={initialData?.status || "DRAFT"} className={`${inputClass} cursor-pointer`}>
-              <option value="DRAFT" className="bg-[#1a1a1a] text-white">Draft (not visible)</option>
-              <option value="PUBLISHED" className="bg-[#1a1a1a] text-white">Published (live)</option>
-              <option value="ARCHIVED" className="bg-[#1a1a1a] text-white">Archived</option>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="ARCHIVED">Archived</option>
             </select>
           </Field>
           <Field label="Featured">
