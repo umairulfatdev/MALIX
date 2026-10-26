@@ -30,6 +30,7 @@ export async function createMusicAction(
   const releaseYearRaw = formData.get("releaseYear") as string;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
+  const downloadUrl = (formData.get("downloadUrl") as string)?.trim() || null; // 👈 NAYA
   const status = (formData.get("status") as string) || "DRAFT";
 
   if (!title || title.length < 2) return { error: "Title is required" };
@@ -54,23 +55,20 @@ export async function createMusicAction(
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         publishedAt: status === "PUBLISHED" ? new Date() : null,
         music: {
-          create: {
-            artist,
-            album,
-            genre,
-          },
+          create: { artist, album, genre },
         },
       },
     });
 
     if (videoUrl) {
       await prisma.videoSource.create({
-        data: {
-          contentId: content.id,
-          url: videoUrl,
-          type: "mp4",
-          isDefault: true,
-        },
+        data: { contentId: content.id, url: videoUrl, type: "mp4", isDefault: true },
+      });
+    }
+
+    if (downloadUrl) {
+      await prisma.downloadOption.create({
+        data: { contentId: content.id, quality: "1080p", fileUrl: downloadUrl, format: "mp4", isAvailable: true },
       });
     }
 
@@ -100,6 +98,7 @@ export async function updateMusicAction(
   const releaseYearRaw = formData.get("releaseYear") as string;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
+  const downloadUrl = (formData.get("downloadUrl") as string)?.trim() || null; // 👈 NAYA
   const status = (formData.get("status") as string) || "DRAFT";
 
   if (!title || title.length < 2) return { error: "Title required" };
@@ -136,6 +135,13 @@ export async function updateMusicAction(
       });
     }
 
+    await prisma.downloadOption.deleteMany({ where: { contentId: musicId } }); // 👈 NAYA
+    if (downloadUrl) {
+      await prisma.downloadOption.create({
+        data: { contentId: musicId, quality: "1080p", fileUrl: downloadUrl, format: "mp4", isAvailable: true },
+      });
+    }
+
     revalidatePath("/admin/music");
     revalidatePath("/music");
     revalidatePath("/");
@@ -160,11 +166,14 @@ export async function getMusicForEdit(musicId: string) {
   try { await requireAdminAction(); } catch { return null; }
   const content = await prisma.content.findUnique({
     where: { id: musicId, type: "MUSIC" },
-    include: { music: true, videoSources: true },
+    include: { music: true, videoSources: true, downloadOptions: true }, // 👈 NAYA
   });
   if (!content) return null;
+  
   const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
-  return { ...content, videoUrl };
+  const downloadUrl = content.downloadOptions[0]?.fileUrl || null; // 👈 NAYA
+  
+  return { ...content, videoUrl, downloadUrl }; // 👈 NAYA
 }
 
 export async function deleteMusicAction(musicId: string) {
