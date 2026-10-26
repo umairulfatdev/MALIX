@@ -12,7 +12,8 @@ async function requireAdminAction() {
   return user;
 }
 
-export interface MovieFormState {
+// 👇 YAHAN NAAM CHANGE KIYA HAI (MovieFormState se ContentFormState)
+export interface ContentFormState {
   error?: string;
   success?: boolean;
 }
@@ -46,7 +47,7 @@ export async function getMovieForEdit(movieId: string) {
   return { ...content, videoUrl, download480p: dl480, download720p: dl720, download1080p: dl1080 };
 }
 
-export async function createMovieAction(_prev: MovieFormState, formData: FormData): Promise<MovieFormState> {
+export async function createMovieAction(_prev: ContentFormState, formData: FormData): Promise<ContentFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -111,7 +112,7 @@ export async function createMovieAction(_prev: MovieFormState, formData: FormDat
   }
 }
 
-export async function updateMovieAction(movieId: string, _prev: MovieFormState, formData: FormData): Promise<MovieFormState> {
+export async function updateMovieAction(movieId: string, _prev: ContentFormState, formData: FormData): Promise<ContentFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
