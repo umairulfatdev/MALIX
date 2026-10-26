@@ -15,13 +15,12 @@ export default async function ContentDetailPage({
     include: {
       genres: true,
       videoSources: { where: { isDefault: true }, take: 1 },
-      downloadOptions: true, // 👈 NAYA: Download options fetch
+      downloadOptions: true,
     },
   });
 
   if (!content) notFound();
 
-  // 👇 NAYA: Check karo ke downloadOptions hain ya nahi
   const hasDownloads = content.downloadOptions && content.downloadOptions.length > 0;
 
   return (
@@ -52,10 +51,10 @@ export default async function ContentDetailPage({
             <h1 className="text-3xl md:text-5xl font-black mb-4">{content.title}</h1>
 
             <div className="flex items-center flex-wrap gap-4 mb-6 text-sm text-zinc-300">
-              {content.avgRating > 0 && (
+              {(content.avgRating ?? 0) > 0 && (
                 <div className="flex items-center gap-1">
                   <Star size={16} className="fill-yellow-500 text-yellow-500" />
-                  <span className="font-bold text-white">{content.avgRating.toFixed(1)}</span>
+                  <span className="font-bold text-white">{(content.avgRating ?? 0).toFixed(1)}</span>
                 </div>
               )}
               {content.releaseYear && (
@@ -86,7 +85,6 @@ export default async function ContentDetailPage({
                 <Play size={20} className="fill-black" /> Watch Now
               </Link>
 
-              {/* 👇 DOWNLOAD BUTTON */}
               {hasDownloads ? (
                 <div className="relative group">
                   <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition font-semibold">

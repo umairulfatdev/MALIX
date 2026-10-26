@@ -12,7 +12,8 @@ async function requireAdminAction() {
   return user;
 }
 
-export interface DramaFormState {
+// 👇 YEH ADD KAR DIYA HAI
+export interface ContentFormState {
   error?: string;
   success?: boolean;
 }
@@ -37,16 +38,14 @@ export async function getDramaForEdit(dramaId: string) {
     include: { genres: true, drama: true, videoSources: true, downloadOptions: true },
   });
   if (!content) return null;
-  
   const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
   const dl480 = content.downloadOptions.find((d) => d.quality === "480p")?.fileUrl || null;
   const dl720 = content.downloadOptions.find((d) => d.quality === "720p")?.fileUrl || null;
   const dl1080 = content.downloadOptions.find((d) => d.quality === "1080p")?.fileUrl || null;
-  
   return { ...content, videoUrl, download480p: dl480, download720p: dl720, download1080p: dl1080 };
 }
 
-export async function createDramaAction(_prev: DramaFormState, formData: FormData): Promise<DramaFormState> {
+export async function createDramaAction(_prev: ContentFormState, formData: FormData): Promise<ContentFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -112,7 +111,7 @@ export async function createDramaAction(_prev: DramaFormState, formData: FormDat
   }
 }
 
-export async function updateDramaAction(dramaId: string, _prev: DramaFormState, formData: FormData): Promise<DramaFormState> {
+export async function updateDramaAction(dramaId: string, _prev: ContentFormState, formData: FormData): Promise<ContentFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
