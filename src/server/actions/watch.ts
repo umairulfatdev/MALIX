@@ -53,7 +53,7 @@ export async function getWatchContent(
         where: { isDefault: true },
         take: 1,
       },
-      downloadOptions: true, // 👈 NAYA: Download options fetch
+      downloadOptions: true, // 👈 NAYA
     },
   });
 
@@ -118,7 +118,7 @@ export async function getWatchContent(
       posterUrl: content.posterUrl,
       avgRating: content.avgRating,
       videoUrl: foundEpisode.videoUrl,
-      downloadUrl: null, // Series ke liye download nahi
+      downloadUrl: null,
       genres: content.genres,
       seasonNumber: foundSeason.seasonNumber,
       episodeNumber: foundEpisode.episodeNum,
@@ -165,7 +165,7 @@ export async function getWatchContent(
     posterUrl: content.posterUrl,
     avgRating: content.avgRating,
     videoUrl,
-    downloadUrl, // 👈 NAYA
+    downloadUrl,
     genres: content.genres,
     initialProgress,
   };

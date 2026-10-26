@@ -86,7 +86,7 @@ export default async function ContentDetailPage({
                 <Play size={20} className="fill-black" /> Watch Now
               </Link>
 
-              {/* 👇 DOWNLOAD BUTTON LOGIC */}
+              {/* 👇 DOWNLOAD BUTTON */}
               {hasDownloads ? (
                 <div className="relative group">
                   <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition font-semibold">
