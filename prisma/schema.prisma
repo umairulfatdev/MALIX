@@ -17,9 +17,8 @@ enum ContentType {
   DRAMA
   SERIES
   ANIME
-  DOCUMENTARY
-  SHORT_FILM
   TRAILER
+  MUSIC
 }
 
 enum PublishStatus {
