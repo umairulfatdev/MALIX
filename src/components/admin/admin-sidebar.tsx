@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   Film,
-  Tv,
+  Calendar, // 👈 Dramas ki jagah Calendar (Coming Soon ke liye)
   Play,
   ListVideo,
   Sparkles,
@@ -19,8 +19,8 @@ import {
   Menu,
   X,
   ArrowLeft,
-  Music,        // 👈 NAYA
-  Megaphone,    // 👈 NAYA
+  Music,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MalixLogo } from "@/components/layout/malix-logo";
@@ -28,16 +28,16 @@ import { MalixLogo } from "@/components/layout/malix-logo";
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Movies", href: "/admin/movies", icon: Film },
-  { label: "Dramas", href: "/admin/dramas", icon: Tv },
+  { label: "Coming Soon", href: "/admin/coming-soon", icon: Calendar }, // 👈 Updated
   { label: "Series", href: "/admin/series", icon: Play },
   { label: "Anime", href: "/admin/anime", icon: Sparkles },
-  { label: "Music", href: "/admin/music", icon: Music },           // 👈 NAYA
+  { label: "Music", href: "/admin/music", icon: Music },
   { label: "Episodes", href: "/admin/episodes", icon: ListVideo },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Reviews", href: "/admin/reviews", icon: MessageSquare },
   { label: "Downloads", href: "/admin/downloads", icon: Download },
   { label: "Drives", href: "/admin/drives", icon: HardDrive },
-  { label: "Ads", href: "/admin/ads", icon: Megaphone },            // 👈 NAYA
+  { label: "Ads", href: "/admin/ads", icon: Megaphone },
   { label: "Statistics", href: "/admin/stats", icon: BarChart3 },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];

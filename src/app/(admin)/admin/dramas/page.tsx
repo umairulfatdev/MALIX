@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { Tv, Plus, Search } from "lucide-react";
-import { getAdminDramas } from "@/server/actions/admin/dramas";
-import { DramaTable } from "@/components/admin/drama-table";
+import { Calendar, Plus, Search } from "lucide-react";
+import { getAdminComingSoon } from "@/server/actions/admin/coming-soon";
 
-export const metadata = { title: "Dramas" };
+export const metadata = { title: "Coming Soon" };
 
 interface Props {
   searchParams: Promise<{
@@ -13,13 +12,13 @@ interface Props {
   }>;
 }
 
-export default async function AdminDramasPage({ searchParams }: Props) {
+export default async function AdminComingSoonPage({ searchParams }: Props) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const search = params.search || "";
   const status = params.status || "ALL";
 
-  const result = await getAdminDramas({
+  const result = await getAdminComingSoon({
     search,
     status,
     page,
@@ -31,24 +30,24 @@ export default async function AdminDramasPage({ searchParams }: Props) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-            <Tv size={20} className="text-white" />
+            <Calendar size={20} className="text-white" />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-white">
-              Dramas
+              Coming Soon
             </h1>
             <p className="text-xs text-zinc-500 mt-0.5">
-              {result.total} {result.total === 1 ? "drama" : "dramas"} total
+              {result.total} {result.total === 1 ? "item" : "items"} total
             </p>
           </div>
         </div>
 
         <Link
-          href="/admin/dramas/new"
+          href="/admin/coming-soon/new"
           className="btn-cosmic flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-xl"
         >
           <Plus size={16} />
-          Add New Drama
+          Add New Coming Soon
         </Link>
       </div>
 
@@ -63,7 +62,7 @@ export default async function AdminDramasPage({ searchParams }: Props) {
               type="search"
               name="search"
               defaultValue={search}
-              placeholder="Search dramas..."
+              placeholder="Search coming soon..."
               className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-500/50"
             />
           </div>
@@ -88,34 +87,32 @@ export default async function AdminDramasPage({ searchParams }: Props) {
         </form>
       </div>
 
-      <DramaTable dramas={result.dramas} />
-
-      {result.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          {Array.from({ length: result.totalPages }, (_, i) => i + 1).map(
-            (p) => {
-              const qs = new URLSearchParams();
-              if (search) qs.set("search", search);
-              if (status && status !== "ALL") qs.set("status", status);
-              if (p > 1) qs.set("page", String(p));
-              const href = `/admin/dramas${qs.toString() ? `?${qs}` : ""}`;
-
-              return (
-                <Link
-                  key={p}
-                  href={href}
-                  className={`min-w-[36px] h-9 flex items-center justify-center rounded-lg text-sm font-medium transition ${
-                    p === result.page
-                      ? "bg-gradient-to-br from-yellow-400 to-amber-600 text-black"
-                      : "bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white border border-white/10"
-                  }`}
-                >
-                  {p}
-                </Link>
-              );
-            }
-          )}
-        </div>
+      {/* Abhi ke liye list placeholder hai, taake error na aaye */}
+      {result.items.length === 0 ? (
+         <div className="text-center p-12 bg-white/5 rounded-2xl border border-white/10">
+            <p className="text-zinc-400">No Coming Soon items found. Click "Add New" to create one.</p>
+         </div>
+      ) : (
+         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
+            <table className="w-full text-left text-sm text-zinc-300">
+               <thead className="text-xs uppercase bg-black/50 text-zinc-400 border-b border-white/5">
+                  <tr>
+                     <th className="px-6 py-4">Title</th>
+                     <th className="px-6 py-4">Type</th>
+                     <th className="px-6 py-4">Release Date</th>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-white/5">
+                  {result.items.map((item) => (
+                     <tr key={item.id}>
+                        <td className="px-6 py-4 text-white">{item.title}</td>
+                        <td className="px-6 py-4">{item.type}</td>
+                        <td className="px-6 py-4">{item.comingSoonDate ? new Date(item.comingSoonDate).toLocaleDateString() : "TBA"}</td>
+                     </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
       )}
     </div>
   );

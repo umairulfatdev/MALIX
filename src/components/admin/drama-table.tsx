@@ -9,7 +9,7 @@ import { DeleteConfirm } from "./delete-confirm";
 import {
   deleteDramaAction,
   toggleDramaPublishAction,
-} from "@/server/actions/admin/dramas";
+} from "@/server/actions/admin/coming-soon";
 
 interface Drama {
   id: string;

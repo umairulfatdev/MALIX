@@ -20,7 +20,8 @@ export interface ContentFormState {
 export async function getAdminMovies(params: { search?: string; status?: string; page?: number; perPage?: number }) {
   try { await requireAdminAction(); } catch { return { movies: [], total: 0, page: 1, totalPages: 0 }; }
   const { search, status, page = 1, perPage = 20 } = params;
-  const where: any = { type: "MOVIE" };
+  // 👈 Yahan isComingSoon: false add kiya hai taake admin ki normal list saaf rahe
+  const where: any = { type: "MOVIE", isComingSoon: false };
   if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }];
   if (status && status !== "ALL") where.status = status;
   const [movies, total] = await Promise.all([
@@ -65,7 +66,6 @@ export async function createMovieAction(_prev: ContentFormState, formData: FormD
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
 
-  // 👇 DOWNLOAD LINKS YAHAN SE AAYENGE
   const dl480 = (formData.get("download480p") as string)?.trim() || null;
   const dl720 = (formData.get("download720p") as string)?.trim() || null;
   const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
@@ -99,7 +99,6 @@ export async function createMovieAction(_prev: ContentFormState, formData: FormD
       await prisma.videoSource.create({ data: { contentId: content.id, url: videoUrl, type: "mp4", isDefault: true } });
     }
 
-    // 👇 YAHAN DOWNLOADS SAVE HO RAHE HAIN
     const downloadOptions = [];
     if (dl480) downloadOptions.push({ contentId: content.id, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
     if (dl720) downloadOptions.push({ contentId: content.id, quality: "720p", fileUrl: dl720, format: "mp4", isAvailable: true });
@@ -110,11 +109,13 @@ export async function createMovieAction(_prev: ContentFormState, formData: FormD
     }
 
     revalidatePath("/admin/movies"); revalidatePath("/movies"); revalidatePath("/");
-    redirect("/admin/movies");
   } catch (error) {
     console.error("Create movie error:", error);
     return { error: "Failed to create movie" };
   }
+
+  // 👈 Redirect ab catch ke bahar hai
+  redirect("/admin/movies");
 }
 
 export async function updateMovieAction(movieId: string, _prev: ContentFormState, formData: FormData): Promise<ContentFormState> {
@@ -136,7 +137,6 @@ export async function updateMovieAction(movieId: string, _prev: ContentFormState
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
 
-  // 👇 DOWNLOAD LINKS YAHAN SE AAYENGE
   const dl480 = (formData.get("download480p") as string)?.trim() || null;
   const dl720 = (formData.get("download720p") as string)?.trim() || null;
   const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
@@ -168,7 +168,6 @@ export async function updateMovieAction(movieId: string, _prev: ContentFormState
       await prisma.videoSource.create({ data: { contentId: movieId, url: videoUrl, type: "mp4", isDefault: true } });
     }
 
-    // 👇 PURANE DOWNLOADS DELETE KARKE NAYE SAVE KARO
     await prisma.downloadOption.deleteMany({ where: { contentId: movieId } });
     
     const downloadOptions = [];
@@ -181,11 +180,13 @@ export async function updateMovieAction(movieId: string, _prev: ContentFormState
     }
 
     revalidatePath("/admin/movies"); revalidatePath(`/admin/movies/${movieId}/edit`); revalidatePath("/movies"); revalidatePath("/");
-    redirect("/admin/movies");
   } catch (error) {
     console.error("Update movie error:", error);
     return { error: "Failed to update movie" };
   }
+
+  // 👈 Redirect ab catch ke bahar hai
+  redirect("/admin/movies");
 }
 
 export async function deleteMovieAction(movieId: string) {
@@ -211,4 +212,11 @@ export async function toggleMoviePublishAction(movieId: string) {
 
 export async function getAllGenres() {
   return await prisma.genre.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true } });
+}
+
+export async function getAllGenresForAdmin() {
+  return await prisma.genre.findMany({ 
+    orderBy: { name: "asc" }, 
+    select: { id: true, name: true, slug: true } 
+  });
 }

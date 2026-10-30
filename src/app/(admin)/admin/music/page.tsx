@@ -1,64 +1,57 @@
 import Link from "next/link";
-import { getAdminMusic, deleteMusicAction } from "@/server/actions/admin/music";
-import { Music, Plus } from "lucide-react";
+import { Music as MusicIcon, Plus } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+
+export const metadata = { title: "Music Admin" };
 
 export default async function AdminMusicPage() {
-  let music: any[] = [];
-  try {
-    music = await getAdminMusic();
-  } catch (e) {
-    console.error("Failed to load music:", e);
-  }
+  const songs = await prisma.content.findMany({
+    where: { type: "MUSIC" },
+    include: { music: true },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1600px]">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center">
+            <MusicIcon size={20} className="text-pink-500" />
+          </div>
           <h1 className="text-2xl font-bold text-white">Music</h1>
-          <p className="text-sm text-zinc-500">Manage songs and albums</p>
         </div>
-        <Link href="/admin/music/new" className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black font-bold rounded-lg">
-          <Plus size={18} /> Add Music
+        <Link href="/admin/music/new" className="btn-cosmic flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl">
+          <Plus size={16} /> Add New Music
         </Link>
       </div>
 
-      <div className="bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-white/5">
+      <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
+        <table className="w-full text-left text-sm text-zinc-300">
+          <thead className="bg-black/50 text-zinc-400 border-b border-white/5">
             <tr>
-              <th className="p-4 text-left text-zinc-400 text-sm">Title</th>
-              <th className="p-4 text-left text-zinc-400 text-sm">Artist</th>
-              <th className="p-4 text-left text-zinc-400 text-sm">Status</th>
-              <th className="p-4 text-right text-zinc-400 text-sm">Actions</th>
+              <th className="px-6 py-4">Title</th>
+              <th className="px-6 py-4">Artist</th>
+              <th className="px-6 py-4">Status</th>
             </tr>
           </thead>
-          <tbody>
-            {(!music || music.length === 0) && (
+          <tbody className="divide-y divide-white/5">
+            {songs.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-zinc-500">
-                  No music yet. Click "Add Music" to create one.
-                </td>
+                <td colSpan={3} className="px-6 py-8 text-center text-zinc-500">No music found.</td>
               </tr>
+            ) : (
+              songs.map((song) => (
+                <tr key={song.id} className="hover:bg-white/5 transition">
+                  <td className="px-6 py-4 text-white font-medium">{song.title}</td>
+                  <td className="px-6 py-4">{song.music?.artist || "-"}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded text-xs ${song.status === "PUBLISHED" ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-500/20 text-zinc-400"}`}>
+                      {song.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
             )}
-            {music?.map((item) => (
-              <tr key={item.id} className="border-t border-white/5">
-                <td className="p-4 text-white">{item.title}</td>
-                <td className="p-4 text-zinc-300">{item.music?.artist || "—"}</td>
-                <td className="p-4">
-                  <span className={item.status === "PUBLISHED" ? "text-green-500" : "text-yellow-500"}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="p-4 text-right space-x-3">
-                  <Link href={`/admin/music/${item.id}/edit`} className="text-blue-500 hover:underline text-sm">
-                    Edit
-                  </Link>
-                  <form action={async () => { "use server"; await deleteMusicAction(item.id); }} className="inline">
-                    <button type="submit" className="text-red-500 hover:underline text-sm">Delete</button>
-                  </form>
-                </td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>

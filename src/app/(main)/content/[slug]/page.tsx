@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Star, Clock, Calendar, Play, Download, Heart } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { RelatedContent } from "@/components/content/related-content"; // 👈 Naya Import
 
 export default async function ContentDetailPage({
   params,
@@ -92,7 +93,6 @@ export default async function ContentDetailPage({
                   </button>
                   <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     {content.downloadOptions.map((opt) => {
-                      // 👇 GOOGLE DRIVE DOWNLOAD LOGIC 👇
                       const isDrive = opt.fileUrl.includes("drive.google.com");
                       let downloadUrl = opt.fileUrl;
 
@@ -129,6 +129,12 @@ export default async function ContentDetailPage({
             </div>
           </div>
         </div>
+
+        {/* 👇 YAHAN RELATED CONTENT SECTION ADD KIYA HAI 👇 */}
+        <div className="mt-16 pt-8 border-t border-white/10 pb-20">
+          <RelatedContent currentId={content.id} type={content.type as any} />
+        </div>
+
       </div>
     </div>
   );

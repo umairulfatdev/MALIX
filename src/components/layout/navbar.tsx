@@ -9,9 +9,9 @@ import { logoutAction } from "@/server/actions/auth";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/movies", label: "Movies" },
-  { href: "/dramas", label: "Dramas" },
   { href: "/series", label: "Series" },
   { href: "/anime", label: "Anime" },
+  { href: "/coming-soon", label: "Coming Soon" },
   { href: "/music", label: "Music" },
 ];
 

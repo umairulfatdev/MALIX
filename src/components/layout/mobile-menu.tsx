@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/movies", label: "Movies" },
-  { href: "/dramas", label: "Dramas" },
+  { href: "/coming-soon", label: "Coming Soon" }, // 👈 Updated
   { href: "/series", label: "Series" },
   { href: "/anime", label: "Anime" },
   { href: "/music", label: "Music" },

@@ -1,72 +1,52 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Play, Music, Search } from "lucide-react";
+import { Music, Play } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
-export default function MusicPage() {
-  const [songs, setSongs] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+export const metadata = {
+  title: "Music | MALIX",
+  description: "Listen to the best music tracks on MALIX",
+};
 
-  useEffect(() => {
-    fetch("/api/music")
-      .then((res) => res.json())
-      .then((data) => {
-        setSongs(data);
-        setLoading(false);
-      });
-  }, []);
-
-  const filtered = songs.filter(
-    (song) =>
-      song.title.toLowerCase().includes(search.toLowerCase()) ||
-      (song.music?.artist || "").toLowerCase().includes(search.toLowerCase())
-  );
+export default async function MusicPage() {
+  const songs = await prisma.content.findMany({
+    where: { 
+      type: "MUSIC", 
+      status: "PUBLISHED" 
+    },
+    include: { 
+      music: true,
+      genres: true 
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Music className="text-yellow-500" size={32} />
-          <h1 className="text-3xl font-bold text-white">Music</h1>
-        </div>
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
-          <input
-            type="text"
-            placeholder="Search songs..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#151515] border border-white/10 rounded-lg text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-yellow-500"
-          />
-        </div>
+    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-12">
+      <div className="flex items-center gap-3 mb-8">
+        <Music size={32} className="text-yellow-500" />
+        <h1 className="text-3xl md:text-4xl font-black text-white">Music</h1>
       </div>
 
-      {loading ? (
-        <p className="text-zinc-400">Loading...</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-zinc-500">No songs found.</p>
+      {songs.length === 0 ? (
+        <div className="text-center p-12 bg-white/5 rounded-2xl border border-white/10">
+          <p className="text-zinc-400">No music added yet.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {filtered.map((song) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {songs.map((song) => (
             <Link key={song.id} href={`/content/${song.slug}`} className="group">
-              <div className="aspect-square rounded-xl overflow-hidden bg-zinc-900 relative">
+              <div className="aspect-square rounded-xl overflow-hidden relative bg-zinc-900 border border-white/10 group-hover:border-yellow-500/50 transition-all">
                 {song.posterUrl ? (
-                  <img src={song.posterUrl} alt={song.title} className="w-full h-full object-cover" />
+                   <img src={song.posterUrl} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Music className="text-zinc-600" size={48} />
-                  </div>
+                   <div className="w-full h-full flex items-center justify-center text-zinc-600"><Music size={40} /></div>
                 )}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center">
-                    <Play size={20} className="fill-black text-black ml-1" />
-                  </div>
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Play size={40} className="text-yellow-500 fill-yellow-500" />
                 </div>
               </div>
-              <p className="mt-2 text-sm font-bold text-white truncate">{song.title}</p>
-              <p className="text-xs text-zinc-500">{song.music?.artist}</p>
+              <h3 className="text-white font-bold mt-3 truncate">{song.title}</h3>
+              <p className="text-zinc-400 text-sm truncate">{song.music?.artist || "Unknown Artist"}</p>
             </Link>
           ))}
         </div>

@@ -42,13 +42,13 @@ export default async function HomePage() {
   const [featuredMovies, trending, movies, series] = await Promise.all([
     // 👇 NAYA: Ab sirf 1 nahi, 5 featured movies uthayenge
     prisma.content.findMany({ 
-      where: { status: "PUBLISHED", isFeatured: true }, 
+      where: { status: "PUBLISHED", isFeatured: true, isComingSoon: false }, // 👈 Yahan change kiya
       take: 5,
       orderBy: { createdAt: "desc" } 
     }),
-    prisma.content.findMany({ where: { status: "PUBLISHED" }, orderBy: { totalViews: "desc" }, take: 8 }),
-    prisma.content.findMany({ where: { status: "PUBLISHED", type: "MOVIE" }, orderBy: { avgRating: "desc" }, take: 8 }),
-    prisma.content.findMany({ where: { status: "PUBLISHED", type: "SERIES" }, orderBy: { avgRating: "desc" }, take: 8 }),
+    prisma.content.findMany({ where: { status: "PUBLISHED", isComingSoon: false }, orderBy: { totalViews: "desc" }, take: 8 }), // 👈 Yahan change kiya
+    prisma.content.findMany({ where: { status: "PUBLISHED", type: "MOVIE", isComingSoon: false }, orderBy: { avgRating: "desc" }, take: 8 }), // 👈 Yahan change kiya
+    prisma.content.findMany({ where: { status: "PUBLISHED", type: "SERIES", isComingSoon: false }, orderBy: { avgRating: "desc" }, take: 8 }), // 👈 Yahan change kiya
   ]);
 
   // Agar koi featured nahi hai, toh top trending utha lo

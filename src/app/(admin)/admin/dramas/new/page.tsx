@@ -1,14 +1,14 @@
-import { DramaForm } from "@/components/admin/drama-form";
-import { getAllGenresForDramaAdmin } from "@/server/actions/admin/dramas";
+import { ComingSoonForm } from "@/components/admin/coming-soon-form";
+import { getAllGenresForComingSoonAdmin } from "@/server/actions/admin/coming-soon";
 
-export const metadata = { title: "Add New Drama" };
+export const metadata = { title: "Add Coming Soon" };
 
-export default async function NewDramaPage() {
-  const genres = await getAllGenresForDramaAdmin();
+export default async function NewComingSoonPage() {
+  const genres = await getAllGenresForComingSoonAdmin();
 
   return (
     <div className="max-w-[1600px]">
-      <DramaForm mode="create" genres={genres} />
+      <ComingSoonForm mode="create" genres={genres} />
     </div>
   );
 }
