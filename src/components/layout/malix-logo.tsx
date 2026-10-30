@@ -29,19 +29,20 @@ export function MalixLogo({
       className={cn("flex items-center gap-2 group", className)}
       aria-label="MALIX Home"
     >
-      {/* Logo Image - No onError (Server Component) */}
+      {/* Logo Image with Float Animation */}
       <div className="relative flex-shrink-0">
+        <div className="absolute inset-0 bg-yellow-500 blur-md opacity-20 group-hover:opacity-60 transition-opacity duration-500 rounded-full" />
         <img
           src="/logo.png"
           alt="MALIX"
-          className="relative w-auto object-contain transition-all group-hover:scale-105"
+          className="relative w-auto object-contain transition-all duration-300 group-hover:scale-110 animate-logo-float"
           style={{ height: `${s.height}px` }}
         />
       </div>
 
-      {/* MALIX Text */}
+      {/* MALIX Text with Shimmer Animation */}
       {showText && (
-        <span className={cn(s.text, "font-black text-yellow-500 tracking-widest")}>
+        <span className={cn(s.text, "font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-500 to-yellow-200 bg-[length:200%_auto] animate-text-shimmer")}>
           MALIX
         </span>
       )}

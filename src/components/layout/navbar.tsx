@@ -29,18 +29,30 @@ export function Navbar({ user }: { user: any }) {
     <header className="sticky top-0 z-50 bg-black border-b border-white/10">
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center justify-between">
         
-        {/* Logo + MALIX Text */}
-        <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="MALIX" className="h-9 w-auto object-contain" />
-          <span className="text-xl md:text-2xl font-black text-yellow-500 tracking-widest">
-            MALIX
-          </span>
+        {/* Logo + MALIX Text with Animation */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="relative">
+            {/* Logo glow effect */}
+            <div className="absolute inset-0 bg-yellow-500 blur-lg opacity-20 group-hover:opacity-60 transition-opacity duration-500 rounded-full" />
+            <img 
+              src="/logo.png" 
+              alt="MALIX" 
+              className="relative h-9 md:h-11 w-auto object-contain animate-logo-float group-hover:scale-110 transition-transform duration-300" 
+            />
+          </div>
+          <div className="flex flex-col -mt-1">
+            <span className="text-xl md:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-500 to-yellow-200 bg-[length:200%_auto] animate-text-shimmer drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]">
+              MALIX
+            </span>
+            <span className="text-[9px] md:text-[10px] text-yellow-500/80 font-bold tracking-[0.25em] uppercase pl-1">
+            </span>
+          </div>
         </Link>
 
         {/* Desktop Links */}
         <nav className="hidden lg:flex items-center gap-8">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="text-sm font-medium text-zinc-400 hover:text-white">
+            <Link key={link.href} href={link.href} className="text-sm font-medium text-zinc-400 hover:text-white hover:scale-110 transition-all duration-300">
               {link.label}
             </Link>
           ))}
@@ -86,8 +98,8 @@ export function Navbar({ user }: { user: any }) {
             </div>
           ) : (
             <>
-              <Link href="/login" className="text-sm text-zinc-300 hover:text-white">Sign In</Link>
-              <Link href="/register" className="bg-yellow-500 text-black text-sm font-bold px-4 py-2 rounded-lg">Get Started</Link>
+              <Link href="/login" className="text-sm text-zinc-300 hover:text-white transition-colors">Sign In</Link>
+              <Link href="/register" className="bg-yellow-500 text-black text-sm font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 hover:scale-105 transition-all">Get Started</Link>
             </>
           )}
         </div>
@@ -102,9 +114,16 @@ export function Navbar({ user }: { user: any }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] bg-black">
           <div className="flex justify-between items-center p-4 border-b border-white/10">
-            <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
-              <img src="/logo.png" alt="MALIX" className="h-8 w-auto object-contain" />
-              <span className="text-xl font-black text-yellow-500">MALIX</span>
+            <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 group">
+              <img src="/logo.png" alt="MALIX" className="h-8 w-auto object-contain animate-logo-float" />
+              <div className="flex flex-col -mt-1">
+                <span className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-500 to-yellow-200 bg-[length:200%_auto] animate-text-shimmer">
+                  MALIX
+                </span>
+                <span className="text-[8px] text-yellow-500/80 font-bold tracking-[0.25em] uppercase">
+              
+                </span>
+              </div>
             </Link>
             <button onClick={() => setMobileOpen(false)} className="text-white">
               <X size={24} />
@@ -119,7 +138,7 @@ export function Navbar({ user }: { user: any }) {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="py-3 text-xl font-medium text-zinc-300 hover:text-yellow-500 border-b border-white/5"
+                  className="py-3 text-xl font-medium text-zinc-300 hover:text-yellow-500 border-b border-white/5 transition-colors"
                 >
                   {link.label}
                 </Link>
@@ -138,20 +157,20 @@ export function Navbar({ user }: { user: any }) {
                     <p className="text-xs text-zinc-400">{user.email}</p>
                   </div>
                 </div>
-                <Link href="/profile" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg border border-white/10 text-white">Profile</Link>
+                <Link href="/profile" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg border border-white/10 text-white hover:bg-white/5 transition">Profile</Link>
                 {user.role === "ADMIN" && (
-                  <Link href="/admin" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg bg-yellow-500 text-black font-bold">Admin Panel</Link>
+                  <Link href="/admin" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg bg-yellow-500 text-black font-bold hover:bg-yellow-400 transition">Admin Panel</Link>
                 )}
-                <button onClick={handleLogout} className="w-full py-3 rounded-lg border border-red-500/50 text-red-500 font-semibold">
+                <button onClick={handleLogout} className="w-full py-3 rounded-lg border border-red-500/50 text-red-500 font-semibold hover:bg-red-500/10 transition">
                   Sign Out
                 </button>
               </div>
             ) : (
               <div className="space-y-3">
-                <Link href="/login" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg border border-yellow-500/50 text-yellow-500 font-semibold">
+                <Link href="/login" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg border border-yellow-500/50 text-yellow-500 font-semibold hover:bg-yellow-500/10 transition">
                   Sign In
                 </Link>
-                <Link href="/register" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg bg-yellow-500 text-black font-semibold">
+                <Link href="/register" onClick={() => setMobileOpen(false)} className="block py-3 text-center rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-400 transition">
                   Get Started
                 </Link>
               </div>
