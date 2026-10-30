@@ -28,11 +28,24 @@ export function Footer() {
 
         <div className="constellation-line my-10" />
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* 👇 YAHAN APNA NAAM AUR PICTURE ADD KIYA HAI 👇 */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <p className="text-xs text-zinc-600">
             © {new Date().getFullYear()} MALIX. All rights reserved.
           </p>
-          <p className="text-xs text-zinc-600 text-center md:text-right">
+
+          <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full border border-white/10 hover:border-yellow-500/50 transition-colors">
+            <img 
+              src="/umair ulfat.jpg" 
+              alt="Malik Umair Ulfat" 
+              className="w-8 h-8 rounded-full object-cover border border-yellow-500"
+            />
+            <span className="text-sm text-zinc-300">
+              Created by <span className="font-bold text-yellow-500">Malik Umair Ulfat</span>
+            </span>
+          </div>
+
+          <p className="text-xs text-zinc-600 text-center md:text-right max-w-[200px]">
             Only legally authorized content is hosted on this platform.
           </p>
         </div>

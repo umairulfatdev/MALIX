@@ -4,12 +4,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "MALIX — Movies, Dramas & Series",
+    default: "MALIX by Umair — Movies & Series",
     template: "%s | MALIX",
   },
   description:
-    "Your Entertainment. One Place. Stream movies, dramas, and series legally on MALIX.",
-  keywords: ["streaming", "movies", "dramas", "series", "MALIX"],
+    "Your Entertainment. One Place. Stream movies and series legally on MALIX.",
+  keywords: ["streaming", "movies", "series", "MALIX"],
 };
 
 export default function RootLayout({
