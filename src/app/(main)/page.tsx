@@ -40,7 +40,6 @@ function MovieCard({ item }: { item: any }) {
 
 export default async function HomePage() {
   const [featuredMovies, trending, movies, series] = await Promise.all([
-    // 👇 Yahan videoSources include kiya hai taake Hero Slider video play kar sake
     prisma.content.findMany({ 
       where: { status: "PUBLISHED", isFeatured: true, isComingSoon: false }, 
       take: 5,
@@ -57,10 +56,8 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pb-20 overflow-hidden font-sans">
       
-      {/* ================= HERO SLIDER (NETFLIX STYLE) ================= */}
       <HeroSlider movies={sliderMovies} />
 
-      {/* ================= CAROUSELS ================= */}
       <div className="relative z-20 max-w-[1400px] mx-auto px-4 md:px-8 -mt-12 space-y-12">
         {trending.length > 0 && (
           <section>
