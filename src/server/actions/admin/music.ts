@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
@@ -11,33 +12,33 @@ async function requireAdminAction() {
   return user;
 }
 
-export interface ContentFormState {
+export interface MusicFormState {
   error?: string;
   success?: boolean;
 }
 
-export async function createMusicAction(
-  _prev: ContentFormState,
-  formData: FormData
-): Promise<ContentFormState> {
+export async function getAdminMusic() {
+  try { await requireAdminAction(); } catch { return []; }
+  return await prisma.content.findMany({
+    where: { type: "MUSIC" },
+    include: { music: true, genres: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function createMusicAction(_prev: MusicFormState, formData: FormData): Promise<MusicFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
 
   const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
   const artist = (formData.get("artist") as string)?.trim() || null;
   const album = (formData.get("album") as string)?.trim() || null;
-  const genre = (formData.get("genre") as string)?.trim() || null;
-  const releaseYearRaw = formData.get("releaseYear") as string;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const downloadUrl = (formData.get("downloadUrl") as string)?.trim() || null; // 👈 NAYA
-  const status = (formData.get("status") as string) || "DRAFT";
+  const status = (formData.get("status") as string) || "PUBLISHED";
 
-  if (!title || title.length < 2) return { error: "Title is required" };
-  if (!description || description.length < 10) return { error: "Description is required" };
+  if (!title) return { error: "Title is required" };
   if (!videoUrl) return { error: "Audio/Video URL is required" };
-
-  const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
 
   let slug = slugify(title);
   const existing = await prisma.content.findUnique({ where: { slug } });
@@ -48,15 +49,13 @@ export async function createMusicAction(
       data: {
         title,
         slug,
-        description,
+        description: `${title} by ${artist || "Unknown Artist"}`,
         type: "MUSIC",
-        releaseYear,
         posterUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         publishedAt: status === "PUBLISHED" ? new Date() : null,
-        music: {
-          create: { artist, album, genre },
-        },
+        music: { create: { artist, album } },
+        downloadEnabled: downloadUrl ? true : false, // 👈 NAYA
       },
     });
 
@@ -67,123 +66,73 @@ export async function createMusicAction(
     }
 
     if (downloadUrl) {
-      await prisma.downloadOption.create({
-        data: { contentId: content.id, quality: "1080p", fileUrl: downloadUrl, format: "mp4", isAvailable: true },
+      await prisma.downloadOption.create({ // 👈 NAYA
+        data: { contentId: content.id, quality: "Original", fileUrl: downloadUrl, format: "mp3", isAvailable: true },
       });
     }
 
     revalidatePath("/admin/music");
     revalidatePath("/music");
-    revalidatePath("/");
-
-    return { success: true };
   } catch (error) {
     console.error("Create music error:", error);
     return { error: "Failed to create music" };
   }
+
+  redirect("/admin/music");
 }
 
-export async function updateMusicAction(
-  musicId: string,
-  _prev: ContentFormState,
-  formData: FormData
-): Promise<ContentFormState> {
+export async function updateMusicAction(contentId: string, _prev: MusicFormState, formData: FormData): Promise<MusicFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
 
   const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
   const artist = (formData.get("artist") as string)?.trim() || null;
   const album = (formData.get("album") as string)?.trim() || null;
-  const genre = (formData.get("genre") as string)?.trim() || null;
-  const releaseYearRaw = formData.get("releaseYear") as string;
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const downloadUrl = (formData.get("downloadUrl") as string)?.trim() || null; // 👈 NAYA
-  const status = (formData.get("status") as string) || "DRAFT";
+  const status = (formData.get("status") as string) || "PUBLISHED";
 
-  if (!title || title.length < 2) return { error: "Title required" };
-  if (!description || description.length < 10) return { error: "Description required" };
-
-  const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
+  if (!title) return { error: "Title is required" };
 
   try {
-    const existing = await prisma.content.findUnique({ where: { id: musicId } });
-    if (!existing) return { error: "Music not found" };
-
     await prisma.content.update({
-      where: { id: musicId },
+      where: { id: contentId },
       data: {
         title,
-        description,
-        releaseYear,
         posterUrl,
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
-        publishedAt: status === "PUBLISHED" && !existing.publishedAt ? new Date() : existing.publishedAt,
+        music: { upsert: { create: { artist, album }, update: { artist, album } } },
+        downloadEnabled: downloadUrl ? true : false, // 👈 NAYA
       },
     });
 
-    await prisma.music.upsert({
-      where: { contentId: musicId },
-      create: { contentId: musicId, artist, album, genre },
-      update: { artist, album, genre },
-    });
-
     if (videoUrl) {
-      await prisma.videoSource.deleteMany({ where: { contentId: musicId } });
-      await prisma.videoSource.create({
-        data: { contentId: musicId, url: videoUrl, type: "mp4", isDefault: true },
-      });
+      await prisma.videoSource.deleteMany({ where: { contentId } });
+      await prisma.videoSource.create({ data: { contentId, url: videoUrl, type: "mp4", isDefault: true } });
     }
 
-    await prisma.downloadOption.deleteMany({ where: { contentId: musicId } }); // 👈 NAYA
     if (downloadUrl) {
-      await prisma.downloadOption.create({
-        data: { contentId: musicId, quality: "1080p", fileUrl: downloadUrl, format: "mp4", isAvailable: true },
-      });
+      await prisma.downloadOption.deleteMany({ where: { contentId } }); // 👈 NAYA
+      await prisma.downloadOption.create({ data: { contentId, quality: "Original", fileUrl: downloadUrl, format: "mp3", isAvailable: true } });
     }
 
     revalidatePath("/admin/music");
+    revalidatePath(`/admin/music/${contentId}/edit`);
     revalidatePath("/music");
-    revalidatePath("/");
-
-    return { success: true };
   } catch (error) {
     console.error("Update music error:", error);
     return { error: "Failed to update music" };
   }
+
+  redirect("/admin/music");
 }
 
-export async function getAdminMusic() {
-  try { await requireAdminAction(); } catch { return []; }
-  return await prisma.content.findMany({
-    where: { type: "MUSIC" },
-    include: { music: true, videoSources: true },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-export async function getMusicForEdit(musicId: string) {
-  try { await requireAdminAction(); } catch { return null; }
-  const content = await prisma.content.findUnique({
-    where: { id: musicId, type: "MUSIC" },
-    include: { music: true, videoSources: true, downloadOptions: true }, // 👈 NAYA
-  });
-  if (!content) return null;
-  
-  const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
-  const downloadUrl = content.downloadOptions[0]?.fileUrl || null; // 👈 NAYA
-  
-  return { ...content, videoUrl, downloadUrl }; // 👈 NAYA
-}
-
-export async function deleteMusicAction(musicId: string) {
+export async function deleteMusicAction(id: string) {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
-    await prisma.content.delete({ where: { id: musicId } });
+    await prisma.content.delete({ where: { id } });
     revalidatePath("/admin/music");
     revalidatePath("/music");
     return { success: true };
-  } catch (error) {
-    return { error: "Failed to delete music" };
-  }
+  } catch (error) { return { error: "Failed to delete music" }; }
 }

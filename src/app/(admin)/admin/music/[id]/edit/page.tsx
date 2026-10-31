@@ -1,10 +1,10 @@
-import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import MusicForm from "@/components/admin/music-form";
-import { updateMusicAction } from "@/server/actions/admin/music";
+import { prisma } from "@/lib/prisma";
+import { MusicForm } from "@/components/admin/music-form";
 
 export default async function EditMusicPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
   const content = await prisma.content.findUnique({
     where: { id, type: "MUSIC" },
     include: { music: true, videoSources: true },
@@ -12,17 +12,15 @@ export default async function EditMusicPage({ params }: { params: Promise<{ id: 
 
   if (!content) notFound();
 
-  const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
-
-  const action = async (prev: any, formData: FormData) => {
-    "use server";
-    return updateMusicAction(id, prev, formData);
-  };
+  const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || "";
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-white mb-6">Edit Music</h1>
-      <MusicForm action={action} defaultValues={{ ...content, videoUrl }} />
+    <div className="max-w-[1600px]">
+      <MusicForm 
+        mode="edit" 
+        contentId={content.id} 
+        initialData={{ ...content, videoUrl }} 
+      />
     </div>
   );
 }
