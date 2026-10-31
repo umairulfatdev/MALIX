@@ -1,120 +1,64 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { Star, Clock, Calendar, ArrowLeft } from "lucide-react";
-import { getWatchContent } from "@/server/actions/watch";
-import { EpisodeNav } from "@/components/player/episode-nav";
-import { WatchClient } from "./watch-client";
-import { getCurrentUser } from "@/lib/auth";
+import { ArrowLeft, Play } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
-export const dynamicParams = true;
-
-interface Props {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ episode?: string }>;
-}
-
-export async function generateMetadata({ params }: Props) {
+export default async function WatchPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const content = await getWatchContent(slug);
-  if (!content) return { title: "Not Found" };
-  return { title: `Watch ${content.title}` };
-}
 
-export default async function WatchPage({ params, searchParams }: Props) {
-  const { slug } = await params;
-  const { episode: episodeId } = await searchParams;
-
-  // Check karo ke user login hai ya nahi
-  const user = await getCurrentUser();
-  
-  if (!user) {
-    redirect(`/login?callbackUrl=/watch/${slug}${episodeId ? `?episode=${episodeId}` : ""}`);
-  }
-
-  const content = await getWatchContent(slug, episodeId);
+  const content = await prisma.content.findUnique({
+    where: { slug, status: "PUBLISHED" },
+    include: { videoSources: true },
+  });
 
   if (!content) notFound();
 
-  const isSeries = content.type === "SERIES";
+  // Video URL nikaalein
+  let videoUrl = content.videoSources.find((v) => v.isDefault)?.url || content.trailerUrl;
+
+  // YouTube ID nikaalne ka function
+  const getYoutubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const ytId = videoUrl ? getYoutubeId(videoUrl) : null;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-8">
-      <Link
-        href={`/content/${content.slug}`}
-        className="inline-flex items-center gap-2 text-zinc-400 hover:text-yellow-500 transition-colors mb-4 text-sm"
-      >
-        <ArrowLeft size={16} />
-        Back to Details
-      </Link>
+    <div className="min-h-screen bg-black text-white pt-20">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8">
+        <Link href={`/content/${content.slug}`} className="flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition">
+          <ArrowLeft size={20} /> Back to Details
+        </Link>
 
-      <WatchClient content={content} />
-
-      {isSeries && (
-        <EpisodeNav
-          slug={content.slug}
-          prevEpisodeId={content.prevEpisodeId || null}
-          nextEpisodeId={content.nextEpisodeId || null}
-          currentSeason={content.seasonNumber}
-          currentEpisode={content.episodeNumber}
-        />
-      )}
-
-      <div className="mt-6 md:mt-8">
-        <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white mb-3">
-          {content.title}
-          {isSeries && content.episodeTitle && (
-            <span className="text-yellow-500">
-              {" · "}
-              {content.episodeTitle}
-            </span>
-          )}
-        </h1>
-
-        <div className="flex items-center flex-wrap gap-3 md:gap-4 mb-6 text-sm">
-          {content.avgRating && content.avgRating > 0 && (
-            <div className="flex items-center gap-1.5">
-              <Star size={14} className="fill-yellow-400 text-yellow-400" />
-              <span className="font-bold text-white">
-                {content.avgRating.toFixed(1)}
-              </span>
+        <div className="w-full aspect-video bg-zinc-900 rounded-xl overflow-hidden shadow-2xl relative">
+          {ytId ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${ytId}?autoplay=1`}
+              className="w-full h-full absolute inset-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : videoUrl ? (
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500">
+              <Play size={60} className="mb-4 opacity-50" />
+              <p>No video available for this content.</p>
             </div>
-          )}
-          {content.releaseYear && (
-            <span className="flex items-center gap-1.5 text-zinc-400">
-              <Calendar size={14} /> {content.releaseYear}
-            </span>
-          )}
-          {content.duration && (
-            <span className="flex items-center gap-1.5 text-zinc-400">
-              <Clock size={14} /> {content.duration} min
-            </span>
-          )}
-          {isSeries && content.seasonNumber && content.episodeNumber && (
-            <span className="px-2.5 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs font-bold">
-              S{content.seasonNumber} · E{content.episodeNumber}
-            </span>
           )}
         </div>
 
-        {content.genres.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {content.genres.map((g) => (
-              <span
-                key={g.id}
-                className="text-xs md:text-sm px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-300"
-              >
-                {g.name}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <p className="text-zinc-300 text-base leading-relaxed max-w-3xl">
-          {isSeries && content.episodeDescription
-            ? content.episodeDescription
-            : content.description}
-        </p>
+        <div className="mt-8">
+          <h1 className="text-3xl font-bold">{content.title}</h1>
+          <p className="text-zinc-400 mt-2">{content.description}</p>
+        </div>
       </div>
     </div>
   );
