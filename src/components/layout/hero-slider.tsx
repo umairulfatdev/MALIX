@@ -1,26 +1,26 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Play, Info, Volume2, VolumeX } from "lucide-react";
+import { Play, Info } from "lucide-react";
 
-// YouTube URL se Video ID nikaalne ka function
+// YouTube URL se ID nikaalne ka function
 function getYouTubeId(url: string) {
+  if (!url) return null;
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url?.match(regExp);
+  const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
 }
 
 export function HeroSlider({ movies }: { movies: any[] }) {
   const [current, setCurrent] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Slider Change Timer
   useEffect(() => {
     if (movies.length <= 1) return;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % movies.length);
-    }, 15000); // 15 seconds tak rukega
+    }, 15000); // 15 seconds
     return () => clearInterval(timer);
   }, [movies.length]);
 
@@ -28,46 +28,50 @@ export function HeroSlider({ movies }: { movies: any[] }) {
 
   const movie = movies[current];
   
-  // Priority: 1. MP4 Video, 2. YouTube Trailer
+  // Check karein ke video source kya hai
   const videoUrl = movie.videoSources?.[0]?.url; 
   const youtubeId = getYouTubeId(movie.trailerUrl);
+  
+  // Background Image (Agar video na ho toh yeh dikhegi)
+  const fallbackImage = movie.backdropUrl || movie.posterUrl || "https://image.tmdb.org/t/p/original/6XjMwQTvnICBz6TguiDKkDVHvgS.jpg"; // Ek default dark image
 
   return (
-    <div className="relative w-full h-[60vh] md:h-[85vh] bg-black overflow-hidden">
+    <div className="relative w-full h-[60vh] md:h-[85vh] bg-[#0a0a0a] overflow-hidden">
       
-      {/* Agar MP4 Video hai toh <video> tag chalega */}
+      {/* 1. AGAR MP4 VIDEO HAI */}
       {videoUrl && videoUrl.includes(".mp4") ? (
         <video
-          ref={videoRef}
           key={movie.id}
           src={videoUrl}
           autoPlay
-          muted={isMuted}
+          muted
           loop
           playsInline
           className="absolute inset-0 w-full h-full object-cover opacity-60"
         />
-      ) : youtubeId ? (
-        /* Agar MP4 nahi hai lekin YouTube link hai, toh background iframe chalega */
+      ) : 
+      /* 2. AGAR YOUTUBE TRAILER HAI */
+      youtubeId ? (
         <div className="absolute inset-0 w-full h-full opacity-60 pointer-events-none">
           <iframe
-            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${youtubeId}&showinfo=0&rel=0`}
-            className="absolute inset-0 w-full h-[120%] -top-[10%] scale-150 md:scale-100 object-cover"
+            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${youtubeId}&showinfo=0&rel=0&iv_load_policy=3`}
+            className="absolute inset-0 w-full h-[120%] -top-[10%] scale-[1.3] md:scale-100 object-cover"
             allow="autoplay; encrypted-media"
             frameBorder="0"
           />
         </div>
-      ) : (
-        /* Agar koi video nahi hai, toh sirf Image dikhegi */
+      ) : 
+      /* 3. AGAR KOI VIDEO NAHI HAI TOH POSTER DIKHAYE */
+      (
         <img
-          src={movie.backdropUrl || movie.posterUrl || "/placeholder.jpg"}
+          src={fallbackImage}
           alt={movie.title}
           className="absolute inset-0 w-full h-full object-cover opacity-60"
         />
       )}
 
-      {/* Dark Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
+      {/* Dark Gradient Overlays (Taake text clear nazar aaye) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
 
       {/* Content */}
@@ -76,7 +80,7 @@ export function HeroSlider({ movies }: { movies: any[] }) {
           {movie.title}
         </h1>
         <p className="text-sm md:text-base text-zinc-300 line-clamp-3 mb-8 drop-shadow-md max-w-2xl">
-          {movie.description}
+          {movie.description || "No description available."}
         </p>
         
         <div className="flex items-center gap-4">
@@ -89,15 +93,6 @@ export function HeroSlider({ movies }: { movies: any[] }) {
         </div>
       </div>
 
-      {/* Mute/Unmute Button */}
-      {(videoUrl || youtubeId) && (
-        <button
-          onClick={() => setIsMuted(!isMuted)}
-          className="absolute bottom-16 right-8 md:bottom-24 md:right-16 w-10 h-10 rounded-full border border-white/40 flex items-center justify-center text-white hover:bg-white/20 transition z-20"
-        >
-          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-        </button>
-      )}
     </div>
   );
 }
