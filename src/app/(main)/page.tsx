@@ -3,7 +3,7 @@ import { Play, Star, TrendingUp, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { HeroSlider } from "@/components/layout/hero-slider";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // Cache for speed
 
 function MovieCard({ item }: { item: any }) {
   return (
@@ -40,29 +40,28 @@ function MovieCard({ item }: { item: any }) {
 
 export default async function HomePage() {
   const [featuredMovies, trending, movies, series] = await Promise.all([
-    // 👇 NAYA: Ab sirf 1 nahi, 5 featured movies uthayenge
+    // 👇 Yahan videoSources include kiya hai taake Hero Slider video play kar sake
     prisma.content.findMany({ 
-      where: { status: "PUBLISHED", isFeatured: true, isComingSoon: false }, // 👈 Yahan change kiya
+      where: { status: "PUBLISHED", isFeatured: true, isComingSoon: false }, 
       take: 5,
-      orderBy: { createdAt: "desc" } 
+      orderBy: { createdAt: "desc" },
+      include: { videoSources: { where: { isDefault: true }, take: 1 } } 
     }),
-    prisma.content.findMany({ where: { status: "PUBLISHED", isComingSoon: false }, orderBy: { totalViews: "desc" }, take: 8 }), // 👈 Yahan change kiya
-    prisma.content.findMany({ where: { status: "PUBLISHED", type: "MOVIE", isComingSoon: false }, orderBy: { avgRating: "desc" }, take: 8 }), // 👈 Yahan change kiya
-    prisma.content.findMany({ where: { status: "PUBLISHED", type: "SERIES", isComingSoon: false }, orderBy: { avgRating: "desc" }, take: 8 }), // 👈 Yahan change kiya
+    prisma.content.findMany({ where: { status: "PUBLISHED", isComingSoon: false }, orderBy: { totalViews: "desc" }, take: 8 }),
+    prisma.content.findMany({ where: { status: "PUBLISHED", type: "MOVIE", isComingSoon: false }, orderBy: { avgRating: "desc" }, take: 8 }),
+    prisma.content.findMany({ where: { status: "PUBLISHED", type: "SERIES", isComingSoon: false }, orderBy: { avgRating: "desc" }, take: 8 }),
   ]);
 
-  // Agar koi featured nahi hai, toh top trending utha lo
   const sliderMovies = featuredMovies.length > 0 ? featuredMovies : trending.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pb-20 overflow-hidden font-sans">
       
-      {/* ================= HERO SLIDER ================= */}
+      {/* ================= HERO SLIDER (NETFLIX STYLE) ================= */}
       <HeroSlider movies={sliderMovies} />
 
       {/* ================= CAROUSELS ================= */}
       <div className="relative z-20 max-w-[1400px] mx-auto px-4 md:px-8 -mt-12 space-y-12">
-        
         {trending.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-6">
@@ -107,7 +106,6 @@ export default async function HomePage() {
             </div>
           </section>
         )}
-
       </div>
     </div>
   );
