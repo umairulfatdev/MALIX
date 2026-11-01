@@ -24,7 +24,7 @@ export async function getAdminComingSoon(params: { search?: string; status?: str
   if (search && search.trim()) where.title = { contains: search, mode: "insensitive" };
   if (status && status !== "ALL") where.status = status;
   const [items, total] = await Promise.all([
-    prisma.content.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * perPage, take: perPage, include: { genres: true } }),
+    prisma.content.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * perPage, take: perPage, include: { genres: true, videoSources: true } }),
     prisma.content.count({ where }),
   ]);
   return { items, total, page, totalPages: Math.ceil(total / perPage) };
@@ -34,7 +34,7 @@ export async function getComingSoonForEdit(contentId: string) {
   try { await requireAdminAction(); } catch { return null; }
   return await prisma.content.findFirst({
     where: { id: contentId, isComingSoon: true },
-    include: { genres: true },
+    include: { genres: true, videoSources: true },
   });
 }
 
@@ -52,11 +52,10 @@ export async function createComingSoonAction(_prev: ComingSoonFormState, formDat
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
+  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
-  
-  // 👇 NAYA: Print Type (CAM, HD, UPCOMING)
   const printType = (formData.get("printType") as string) || "UPCOMING";
 
   if (!title || title.length < 2) return { error: "Title is required" };
@@ -69,7 +68,7 @@ export async function createComingSoonAction(_prev: ComingSoonFormState, formDat
   if (existing) slug = `${slug}-${Date.now()}`;
 
   try {
-    await prisma.content.create({
+    const content = await prisma.content.create({
       data: {
         title, slug, description, shortDesc,
         type: type as "MOVIE" | "SERIES" | "ANIME",
@@ -79,11 +78,17 @@ export async function createComingSoonAction(_prev: ComingSoonFormState, formDat
         isFeatured,
         isComingSoon: true,
         comingSoonDate,
-        printType, // 👈 Save kiya
+        printType,
         publishedAt: status === "PUBLISHED" ? new Date() : null,
         genres: genreIds.length ? { connect: genreIds.map((id) => ({ id })) } : undefined,
       },
     });
+
+    if (videoUrl) {
+      await prisma.videoSource.create({
+        data: { contentId: content.id, url: videoUrl, type: "mp4", isDefault: true },
+      });
+    }
 
     revalidatePath("/admin/coming-soon");
     revalidatePath("/coming-soon");
@@ -110,11 +115,10 @@ export async function updateComingSoonAction(contentId: string, _prev: ComingSoo
   const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
   const backdropUrl = (formData.get("backdropUrl") as string)?.trim() || null;
   const trailerUrl = (formData.get("trailerUrl") as string)?.trim() || null;
+  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
-  
-  // 👇 NAYA: Print Type
   const printType = (formData.get("printType") as string) || "UPCOMING";
 
   if (!title || title.length < 2) return { error: "Title is required" };
@@ -136,11 +140,18 @@ export async function updateComingSoonAction(contentId: string, _prev: ComingSoo
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
         comingSoonDate,
-        printType, // 👈 Update kiya
+        printType,
         publishedAt: status === "PUBLISHED" && !existing.publishedAt ? new Date() : existing.publishedAt,
         genres: { set: [], connect: genreIds.map((id) => ({ id })) },
       },
     });
+
+    if (videoUrl) {
+      await prisma.videoSource.deleteMany({ where: { contentId } });
+      await prisma.videoSource.create({
+        data: { contentId, url: videoUrl, type: "mp4", isDefault: true },
+      });
+    }
 
     revalidatePath("/admin/coming-soon");
     revalidatePath(`/admin/coming-soon/${contentId}/edit`);
