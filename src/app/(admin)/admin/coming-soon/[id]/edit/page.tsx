@@ -27,6 +27,7 @@ export default async function EditComingSoonPage({
           ...content,
           type: content.type,
           comingSoonDate: content.comingSoonDate,
+          printType: content.printType,
           genres: content.genres,
         }}
         genres={genres}

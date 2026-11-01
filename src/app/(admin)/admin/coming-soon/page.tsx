@@ -82,6 +82,7 @@ export default async function AdminComingSoonPage({ searchParams }: Props) {
               <tr>
                 <th className="px-6 py-4">Title</th>
                 <th className="px-6 py-4">Type</th>
+                <th className="px-6 py-4">Print Type</th>
                 <th className="px-6 py-4">Release Date</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
@@ -90,7 +91,7 @@ export default async function AdminComingSoonPage({ searchParams }: Props) {
             <tbody className="divide-y divide-white/5">
               {result.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
                     No Coming Soon items found. Click "Add New" to create one.
                   </td>
                 </tr>
@@ -99,6 +100,11 @@ export default async function AdminComingSoonPage({ searchParams }: Props) {
                   <tr key={item.id} className="hover:bg-white/5 transition">
                     <td className="px-6 py-4 font-medium text-white">{item.title}</td>
                     <td className="px-6 py-4">{item.type}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${item.printType === "CAM" ? "bg-red-500/20 text-red-400" : item.printType === "HD" ? "bg-emerald-500/20 text-emerald-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+                        {item.printType || "UPCOMING"}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       {item.comingSoonDate ? new Date(item.comingSoonDate).toLocaleDateString() : "TBA"}
                     </td>
@@ -110,15 +116,18 @@ export default async function AdminComingSoonPage({ searchParams }: Props) {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <form action={async () => { "use server"; await toggleComingSoonPublishAction(item.id); }}>
-                          <button type="submit" className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10">
+                          <button type="submit" className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10" title="Toggle Publish">
                             {item.status === "PUBLISHED" ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </form>
-                        <Link href={`/admin/coming-soon/${item.id}/edit`} className="p-2 text-zinc-400 hover:text-yellow-500 rounded-lg hover:bg-white/10">
+                        
+                        {/* 👇 EDIT BUTTON 👇 */}
+                        <Link href={`/admin/coming-soon/${item.id}/edit`} className="p-2 text-zinc-400 hover:text-yellow-500 rounded-lg hover:bg-white/10 transition" title="Edit">
                           <Edit size={16} />
                         </Link>
+
                         <form action={async () => { "use server"; await deleteComingSoonAction(item.id); }}>
-                          <button type="submit" className="p-2 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-white/10">
+                          <button type="submit" className="p-2 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-white/10 transition" title="Delete">
                             <Trash2 size={16} />
                           </button>
                         </form>
