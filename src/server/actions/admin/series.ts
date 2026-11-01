@@ -17,10 +17,17 @@ export interface SeriesFormState {
   success?: boolean;
 }
 
+export interface SeasonFormState {
+  error?: string;
+  success?: boolean;
+}
+
+// ==================== SERIES MAIN ACTIONS ====================
+
 export async function getAdminSeries(params: { search?: string; status?: string; page?: number; perPage?: number }) {
   try { await requireAdminAction(); } catch { return { series: [], total: 0, page: 1, totalPages: 0 }; }
   const { search, status, page = 1, perPage = 20 } = params;
-  const where: any = { type: "SERIES", isComingSoon: false };;
+  const where: any = { type: "SERIES", isComingSoon: false };
   if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }];
   if (status && status !== "ALL") where.status = status;
   const [series, total] = await Promise.all([
@@ -46,6 +53,7 @@ export async function getSeriesForEdit(seriesId: string) {
 
 export async function createSeriesAction(_prev: SeriesFormState, formData: FormData): Promise<SeriesFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  // ... (createSeriesAction ka purana code same rahega, maine change nahi kiya)
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const shortDesc = (formData.get("shortDesc") as string)?.trim() || null;
@@ -60,7 +68,6 @@ export async function createSeriesAction(_prev: SeriesFormState, formData: FormD
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
-
   const dl480 = (formData.get("download480p") as string)?.trim() || null;
   const dl720 = (formData.get("download720p") as string)?.trim() || null;
   const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
@@ -69,7 +76,6 @@ export async function createSeriesAction(_prev: SeriesFormState, formData: FormD
   if (!description || description.length < 10) return { error: "Description is required" };
 
   const releaseYear = releaseYearRaw ? parseInt(releaseYearRaw) : null;
-
   let slug = slugify(title);
   const existing = await prisma.content.findUnique({ where: { slug } });
   if (existing) slug = `${slug}-${Date.now()}`;
@@ -88,9 +94,7 @@ export async function createSeriesAction(_prev: SeriesFormState, formData: FormD
       },
     });
 
-    if (videoUrl) {
-      await prisma.videoSource.create({ data: { contentId: content.id, url: videoUrl, type: "mp4", isDefault: true } });
-    }
+    if (videoUrl) await prisma.videoSource.create({ data: { contentId: content.id, url: videoUrl, type: "mp4", isDefault: true } });
 
     const downloadOptions = [];
     if (dl480) downloadOptions.push({ contentId: content.id, quality: "480p", fileUrl: dl480, format: "mp4", isAvailable: true });
@@ -107,6 +111,7 @@ export async function createSeriesAction(_prev: SeriesFormState, formData: FormD
 }
 
 export async function updateSeriesAction(seriesId: string, _prev: SeriesFormState, formData: FormData): Promise<SeriesFormState> {
+  // ... (updateSeriesAction ka purana code same rahega)
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -122,7 +127,6 @@ export async function updateSeriesAction(seriesId: string, _prev: SeriesFormStat
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
-
   const dl480 = (formData.get("download480p") as string)?.trim() || null;
   const dl720 = (formData.get("download720p") as string)?.trim() || null;
   const dl1080 = (formData.get("download1080p") as string)?.trim() || null;
@@ -192,4 +196,100 @@ export async function toggleSeriesPublishAction(seriesId: string) {
 
 export async function getAllGenresForSeriesAdmin() {
   return await prisma.genre.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true } });
+}
+
+// ==================== NAYE FUNCTIONS (SEASONS & EPISODES) ====================
+
+export async function createSeasonAction(seriesId: string, _prev: SeasonFormState, formData: FormData): Promise<SeasonFormState> {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  const seasonNumber = parseInt(formData.get("seasonNumber") as string);
+  const title = (formData.get("title") as string)?.trim() || null;
+  const description = (formData.get("description") as string)?.trim() || null;
+  const posterUrl = (formData.get("posterUrl") as string)?.trim() || null;
+
+  if (!seasonNumber) return { error: "Season number is required" };
+
+  try {
+    const series = await prisma.series.findFirst({ where: { contentId: seriesId } });
+    if (!series) return { error: "Series not found" };
+
+    await prisma.season.create({
+      data: { seriesId: series.id, seasonNumber, title, description, posterUrl },
+    });
+
+    await prisma.series.update({
+      where: { id: series.id },
+      data: { totalSeasons: { increment: 1 } },
+    });
+
+    revalidatePath(`/admin/series/${seriesId}/edit`);
+    return { success: true };
+  } catch (error) {
+    console.error("Create season error:", error);
+    return { error: "Failed to create season" };
+  }
+}
+
+export async function deleteSeasonAction(seasonId: string) {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  try {
+    const season = await prisma.season.findUnique({ where: { id: seasonId }, include: { series: true } });
+    if (!season) return { error: "Season not found" };
+
+    await prisma.season.delete({ where: { id: seasonId } });
+
+    await prisma.series.update({
+      where: { id: season.seriesId },
+      data: { totalSeasons: { decrement: 1 } },
+    });
+
+    revalidatePath(`/admin/series/${season.series.contentId}/edit`);
+    return { success: true };
+  } catch (error) { return { error: "Failed to delete season" }; }
+}
+
+export async function createEpisodeAction(seasonId: string, formData: FormData) {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+
+  const episodeNum = parseInt(formData.get("episodeNum") as string);
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim() || null;
+  const thumbnailUrl = (formData.get("thumbnailUrl") as string)?.trim() || null;
+  const duration = formData.get("duration") ? parseInt(formData.get("duration") as string) : null;
+  const videoUrl = (formData.get("videoUrl") as string)?.trim() || null;
+  const status = (formData.get("status") as string) || "DRAFT";
+
+  if (!episodeNum) return { error: "Episode number is required" };
+  if (!title) return { error: "Title is required" };
+
+  try {
+    const episode = await prisma.episode.create({
+      data: { seasonId, episodeNum, title, description, thumbnailUrl, duration, videoUrl, status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED" },
+    });
+
+    if (videoUrl) {
+      const season = await prisma.season.findUnique({ where: { id: seasonId }, include: { series: { include: { content: true } } } });
+      if (season) {
+        await prisma.videoSource.create({
+          data: { contentId: season.series.content.id, episodeId: episode.id, url: videoUrl, type: "mp4", isDefault: true },
+        });
+      }
+    }
+
+    revalidatePath(`/admin/series`);
+    return { success: true };
+  } catch (error) {
+    console.error("Create episode error:", error);
+    return { error: "Failed to create episode" };
+  }
+}
+
+export async function deleteEpisodeAction(episodeId: string) {
+  try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  try {
+    await prisma.videoSource.deleteMany({ where: { episodeId } });
+    await prisma.episode.delete({ where: { id: episodeId } });
+    revalidatePath("/admin/series");
+    return { success: true };
+  } catch (error) { return { error: "Failed to delete episode" }; }
 }

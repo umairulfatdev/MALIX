@@ -33,11 +33,11 @@ export async function getAllAnimeGenres() {
 }
 
 export async function getAllAnimeLanguages() {
-  const contents = await prisma.content.findMany({ where: { type: "ANIME", status: "PUBLISHED" }, select: { language: true }, distinct: ["language"] });
+  const contents = await prisma.content.findMany({ where: { type: "ANIME", status: "PUBLISHED", isComingSoon: false }, select: { language: true }, distinct: ["language"] });
   return contents.map((c) => c.language).filter((l): l is string => Boolean(l)).sort();
 }
 
 export async function getAllAnimeYears() {
-  const contents = await prisma.content.findMany({ where: { type: "ANIME", status: "PUBLISHED" }, select: { releaseYear: true }, distinct: ["releaseYear"] });
+  const contents = await prisma.content.findMany({ where: { type: "ANIME", status: "PUBLISHED", isComingSoon: false }, select: { releaseYear: true }, distinct: ["releaseYear"] });
   return contents.map((c) => c.releaseYear).filter((y): y is number => Boolean(y)).sort((a, b) => b - a);
 }

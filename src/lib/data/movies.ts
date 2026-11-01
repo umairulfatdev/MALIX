@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { unstable_noStore as noStore } from "next/cache"; // 👈 Yeh add kiya hai
 
 export interface MovieListItem {
   id: string;
@@ -16,9 +17,16 @@ export interface MovieListItem {
 }
 
 export async function getMovies(filters: any = {}) {
+  noStore(); // 👈 Cache ko band karne ke liye
+
   const { search, genres = [], year, minRating, language, sort = "latest", page = 1, perPage = 20 } = filters;
-  // 👈 Yahan isComingSoon: false add kiya hai
-  const where: Prisma.ContentWhereInput = { type: "MOVIE", status: "PUBLISHED", isComingSoon: false };
+  
+  const where: Prisma.ContentWhereInput = { 
+    type: "MOVIE", 
+    status: "PUBLISHED", 
+    isComingSoon: false, 
+    comingSoonDate: null 
+  };
 
   if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }];
   if (genres.length > 0) where.genres = { some: { slug: { in: genres } } };
@@ -48,13 +56,21 @@ export async function getAllGenres() {
 }
 
 export async function getAllLanguages() {
-  // 👈 Yahan bhi add kiya hai
-  const contents = await prisma.content.findMany({ where: { type: "MOVIE", status: "PUBLISHED", isComingSoon: false }, select: { language: true }, distinct: ["language"] });
+  noStore(); // 👈 Cache ko band karne ke liye
+  const contents = await prisma.content.findMany({ 
+    where: { type: "MOVIE", status: "PUBLISHED", isComingSoon: false, comingSoonDate: null }, 
+    select: { language: true }, 
+    distinct: ["language"] 
+  });
   return contents.map((c) => c.language).filter((l): l is string => Boolean(l)).sort();
 }
 
 export async function getAllYears() {
-  // 👈 Yahan bhi add kiya hai
-  const contents = await prisma.content.findMany({ where: { type: "MOVIE", status: "PUBLISHED", isComingSoon: false }, select: { releaseYear: true }, distinct: ["releaseYear"] });
+  noStore(); // 👈 Cache ko band karne ke liye
+  const contents = await prisma.content.findMany({ 
+    where: { type: "MOVIE", status: "PUBLISHED", isComingSoon: false, comingSoonDate: null }, 
+    select: { releaseYear: true }, 
+    distinct: ["releaseYear"] 
+  });
   return contents.map((c) => c.releaseYear).filter((y): y is number => Boolean(y)).sort((a, b) => b - a);
 }

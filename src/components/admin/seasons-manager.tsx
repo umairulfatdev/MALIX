@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react"; // 👈 useEffect add kiya
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -142,9 +142,13 @@ function AddSeasonForm({
   const action = createSeasonAction.bind(null, seriesId);
   const [state, formAction] = useActionState(action, seasonInitialState);
 
-  if (state?.success && onSuccess) {
-    onSuccess();
-  }
+  // 👈 Yahan useEffect use kiya hai taake error khatam ho
+  useEffect(() => {
+    if (state?.success) {
+      toast.success("Season created successfully!");
+      onSuccess();
+    }
+  }, [state, onSuccess]);
 
   return (
     <div className="glass-cosmic rounded-2xl p-6">

@@ -136,12 +136,12 @@ export async function getSeriesGenres() {
 }
 
 export async function getSeriesLanguages() {
-  const contents = await prisma.content.findMany({ where: { type: "SERIES", status: "PUBLISHED" }, select: { language: true }, distinct: ["language"] });
+  const contents = await prisma.content.findMany({ where: { type: "SERIES", status: "PUBLISHED", isComingSoon: false }, select: { language: true }, distinct: ["language"] });
   return contents.map((c) => c.language).filter((l): l is string => Boolean(l)).sort();
 }
 
 export async function getSeriesYears() {
-  const contents = await prisma.content.findMany({ where: { type: "SERIES", status: "PUBLISHED" }, select: { releaseYear: true }, distinct: ["releaseYear"] });
+  const contents = await prisma.content.findMany({ where: { type: "SERIES", status: "PUBLISHED", isComingSoon: false }, select: { releaseYear: true }, distinct: ["releaseYear"] });
   return contents.map((c) => c.releaseYear).filter((y): y is number => Boolean(y)).sort((a, b) => b - a);
 }
 
