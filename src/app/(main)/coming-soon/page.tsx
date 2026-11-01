@@ -50,15 +50,39 @@ export default async function ComingSoonPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
           {comingSoonItems.map((item) => (
-            <ComingSoonModal key={item.id} item={item}>
-              <ContentCard
-                href="#"
-                title={item.title}
-                posterUrl={item.posterUrl}
-                year={item.releaseYear}
-                rating={item.avgRating}
-              />
-            </ComingSoonModal>
+            <div key={item.id} className="relative group">
+              
+              {/* 👇 CAM PRINT Badge (Red) */}
+              {item.printType === "CAM" && (
+                <div className="absolute top-2 left-2 z-30 px-2 py-1 bg-red-600 text-white text-[10px] font-bold rounded shadow-lg uppercase tracking-wider">
+                  CAM PRINT
+                </div>
+              )}
+
+              {/* 👇 UPCOMING Badge (Yellow) */}
+              {item.printType === "UPCOMING" && (
+                <div className="absolute top-2 left-2 z-30 px-2 py-1 bg-yellow-500 text-black text-[10px] font-bold rounded shadow-lg uppercase tracking-wider">
+                  Upcoming
+                </div>
+              )}
+
+              {/* 👇 HD Badge (Green - Optional) */}
+              {item.printType === "HD" && (
+                <div className="absolute top-2 left-2 z-30 px-2 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded shadow-lg uppercase tracking-wider">
+                  HD Print
+                </div>
+              )}
+
+              <ComingSoonModal item={item}>
+                <ContentCard
+                  href="#"
+                  title={item.title}
+                  posterUrl={item.posterUrl}
+                  year={item.releaseYear}
+                  rating={item.avgRating}
+                />
+              </ComingSoonModal>
+            </div>
           ))}
         </div>
       )}

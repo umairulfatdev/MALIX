@@ -512,3 +512,90 @@ body {
 .animate-logo-float { 
   animation: logoFloat 4s ease-in-out infinite; 
 }
+/* ==================== NETFLIX STYLE CINEMATIC ZOOM ==================== */
+@keyframes cinematicZoom {
+  0% {
+    transform: scale(2.5);
+    opacity: 0;
+    filter: brightness(2) blur(4px);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    filter: brightness(1.5) blur(0px);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1) blur(0px);
+  }
+}
+
+.animate-cinematic-zoom {
+  animation: cinematicZoom 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+/* ==================== 3D CINEMATIC LOGO INTRO ==================== */
+
+/* Container jo 3D space banayega */
+.intro-container-3d {
+  position: relative;
+  perspective: 1000px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 1. Camera Zoom In Effect (Logo Andar Aana) */
+@keyframes cameraZoomIn {
+  0% {
+    transform: translateZ(800px) scale(1.5);
+    opacity: 0;
+    filter: blur(10px);
+  }
+  50% {
+    transform: translateZ(100px) scale(1.1);
+    opacity: 1;
+    filter: blur(0px) brightness(1.5);
+  }
+  100% {
+    transform: translateZ(0) scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+.logo-zoom-3d {
+  animation: cameraZoomIn 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 2. Barcode Light Strips (Colors Ki Lines) */
+@keyframes stripFly {
+  0% {
+    transform: translateZ(-500px) scale(0.5);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateZ(600px) scale(3);
+    opacity: 0;
+  }
+}
+
+.light-strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px; /* Line ki motai */
+  height: 100%;
+  animation: stripFly 2s linear infinite;
+  box-shadow: 0 0 20px 2px currentColor; /* Neon chamak */
+}
+
+/* Alag alag colors ke liye */
+.strip-red { background-color: #E50914; color: #E50914; left: 20%; animation-delay: 0s; }
+.strip-blue { background-color: #0071eb; color: #0071eb; left: 35%; animation-delay: 0.3s; }
+.strip-yellow { background-color: #fbbf24; color: #fbbf24; left: 50%; animation-delay: 0.6s; }
+.strip-purple { background-color: #a855f7; color: #a855f7; left: 65%; animation-delay: 0.9s; }
+.strip-orange { background-color: #f97316; color: #f97316; left: 80%; animation-delay: 1.2s; }

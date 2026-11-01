@@ -55,6 +55,9 @@ export async function createComingSoonAction(_prev: ComingSoonFormState, formDat
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
+  
+  // 👇 NAYA: Print Type (CAM, HD, UPCOMING)
+  const printType = (formData.get("printType") as string) || "UPCOMING";
 
   if (!title || title.length < 2) return { error: "Title is required" };
 
@@ -76,6 +79,7 @@ export async function createComingSoonAction(_prev: ComingSoonFormState, formDat
         isFeatured,
         isComingSoon: true,
         comingSoonDate,
+        printType, // 👈 Save kiya
         publishedAt: status === "PUBLISHED" ? new Date() : null,
         genres: genreIds.length ? { connect: genreIds.map((id) => ({ id })) } : undefined,
       },
@@ -89,7 +93,6 @@ export async function createComingSoonAction(_prev: ComingSoonFormState, formDat
     return { error: "Failed to create coming soon" };
   }
 
-  // 👈 Redirect ab try/catch ke bahar hai
   redirect("/admin/coming-soon");
 }
 
@@ -110,6 +113,9 @@ export async function updateComingSoonAction(contentId: string, _prev: ComingSoo
   const status = (formData.get("status") as string) || "DRAFT";
   const isFeatured = formData.get("isFeatured") === "on";
   const genreIds = formData.getAll("genres") as string[];
+  
+  // 👇 NAYA: Print Type
+  const printType = (formData.get("printType") as string) || "UPCOMING";
 
   if (!title || title.length < 2) return { error: "Title is required" };
 
@@ -130,6 +136,7 @@ export async function updateComingSoonAction(contentId: string, _prev: ComingSoo
         status: status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
         isFeatured,
         comingSoonDate,
+        printType, // 👈 Update kiya
         publishedAt: status === "PUBLISHED" && !existing.publishedAt ? new Date() : existing.publishedAt,
         genres: { set: [], connect: genreIds.map((id) => ({ id })) },
       },
@@ -144,7 +151,6 @@ export async function updateComingSoonAction(contentId: string, _prev: ComingSoo
     return { error: "Failed to update coming soon" };
   }
 
-  // 👈 Redirect ab try/catch ke bahar hai
   redirect("/admin/coming-soon");
 }
 

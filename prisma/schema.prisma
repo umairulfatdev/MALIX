@@ -132,6 +132,7 @@ model Content {
   downloadEnabled Boolean           @default(false)
   isComingSoon    Boolean           @default(false)
   comingSoonDate  DateTime?
+  printType       String?           @default("HD") // 👈 NAYA: CAM, HD, UPCOMING
   
   drive           Drive?            @relation(fields: [driveId], references: [id])
   casts           ContentCast[]
@@ -140,7 +141,7 @@ model Content {
   drama           Drama?
   featured        FeaturedContent[]
   movie           Movie?
-  music           Music?            // 👈 Ye line add ki hai
+  music           Music?
   ratings         Rating[]
   reviews         Review[]
   series          Series?
@@ -162,7 +163,7 @@ model Content {
   @@index([driveId])
 }
 
-model Music { // 👈 Ye naya model add kiya hai
+model Music {
   id        String   @id @default(cuid())
   contentId String   @unique
   artist    String?
