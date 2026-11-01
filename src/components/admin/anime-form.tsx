@@ -4,13 +4,9 @@ import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Video, HardDrive, Download } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Video, Download } from "lucide-react";
 import { toast } from "sonner";
-import {
-  createAnimeAction,
-  updateAnimeAction,
-  ContentFormState,
-} from "@/server/actions/admin/anime";
+import { createAnimeAction, updateAnimeAction, ContentFormState } from "@/server/actions/admin/anime";
 
 interface Genre { id: string; name: string; }
 interface DriveOption { id: string; name: string; }
@@ -33,6 +29,7 @@ interface AnimeData {
   download1080p?: string | null;
   status?: string;
   isFeatured?: boolean;
+  avgRating?: number | null; // 👈 NAYA
   genres?: { id: string }[];
   driveId?: string | null;
 }
@@ -91,10 +88,11 @@ export function AnimeForm({ mode, animeId, initialData, genres, drives = [] }: A
       </Section>
 
       <Section title="Details">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Field label="Release Year"><input name="releaseYear" type="number" min="1900" max="2100" defaultValue={initialData?.releaseYear || ""} className={inputClass} placeholder="2024" /></Field>
           <Field label="Language"><input name="language" defaultValue={initialData?.language || ""} className={inputClass} placeholder="Japanese" /></Field>
           <Field label="Country"><input name="country" defaultValue={initialData?.country || ""} className={inputClass} placeholder="Japan" /></Field>
+          <Field label="Rating (0-10)"><input name="avgRating" type="number" step="0.1" min="0" max="10" defaultValue={initialData?.avgRating || ""} className={inputClass} placeholder="8.5" /></Field>
           <Field label="Quality">
             <select name="quality" defaultValue={initialData?.quality || "HD"} className={`${inputClass} cursor-pointer`}>
               <option value="HD">HD</option><option value="480p">480p</option><option value="720p">720p</option><option value="1080p">1080p</option><option value="4K">4K</option>
