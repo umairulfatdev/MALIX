@@ -20,7 +20,7 @@ export interface SeriesFormState {
 export async function getAdminSeries(params: { search?: string; status?: string; page?: number; perPage?: number }) {
   try { await requireAdminAction(); } catch { return { series: [], total: 0, page: 1, totalPages: 0 }; }
   const { search, status, page = 1, perPage = 20 } = params;
-  const where: any = { type: "SERIES" };
+  const where: any = { type: "SERIES", isComingSoon: false };;
   if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }];
   if (status && status !== "ALL") where.status = status;
   const [series, total] = await Promise.all([

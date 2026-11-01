@@ -20,7 +20,7 @@ export interface MusicFormState {
 export async function getAdminMusic() {
   try { await requireAdminAction(); } catch { return []; }
   return await prisma.content.findMany({
-    where: { type: "MUSIC" },
+    where: { type: "MUSIC", isComingSoon: false },
     include: { music: true, genres: true },
     orderBy: { createdAt: "desc" },
   });
