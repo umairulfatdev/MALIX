@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
@@ -22,7 +21,7 @@ export interface SeasonFormState {
   success?: boolean;
 }
 
-// ==================== SERIES MAIN ACTIONS ====================
+// ==================== SERIES ADMIN ACTIONS ====================
 
 export async function getAdminSeries(params: { search?: string; status?: string; page?: number; perPage?: number }) {
   try { await requireAdminAction(); } catch { return { series: [], total: 0, page: 1, totalPages: 0 }; }
@@ -30,8 +29,15 @@ export async function getAdminSeries(params: { search?: string; status?: string;
   const where: any = { type: "SERIES", isComingSoon: false };
   if (search && search.trim()) where.OR = [{ title: { contains: search, mode: "insensitive" } }];
   if (status && status !== "ALL") where.status = status;
+  
   const [series, total] = await Promise.all([
-    prisma.content.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * perPage, take: perPage, include: { genres: true, series: { include: { _count: { select: { seasons: true } } } } } }),
+    prisma.content.findMany({ 
+      where, 
+      orderBy: { createdAt: "desc" }, 
+      skip: (page - 1) * perPage, 
+      take: perPage, 
+      include: { genres: true, series: { include: { _count: { select: { seasons: true } } } } } 
+    }),
     prisma.content.count({ where }),
   ]);
   return { series, total, page, totalPages: Math.ceil(total / perPage) };
@@ -39,21 +45,41 @@ export async function getAdminSeries(params: { search?: string; status?: string;
 
 export async function getSeriesForEdit(seriesId: string) {
   try { await requireAdminAction(); } catch { return null; }
+  
   const content = await prisma.content.findUnique({
     where: { id: seriesId, type: "SERIES" },
-    include: { genres: true, videoSources: true, downloadOptions: true, series: { include: { seasons: { include: { episodes: true } } } } },
+    include: { 
+      genres: true, 
+      videoSources: true, 
+      downloadOptions: true, 
+      series: { 
+        include: { 
+          seasons: { 
+            orderBy: { seasonNumber: "asc" },
+            include: { 
+              episodes: { 
+                orderBy: { episodeNum: "asc" }
+              } 
+            } 
+          } 
+        } 
+      } 
+    },
   });
+  
   if (!content) return null;
+  
   const videoUrl = content.videoSources.find((v) => v.isDefault)?.url || null;
   const dl480 = content.downloadOptions.find((d) => d.quality === "480p")?.fileUrl || null;
   const dl720 = content.downloadOptions.find((d) => d.quality === "720p")?.fileUrl || null;
   const dl1080 = content.downloadOptions.find((d) => d.quality === "1080p")?.fileUrl || null;
+  
   return { ...content, videoUrl, download480p: dl480, download720p: dl720, download1080p: dl1080 };
 }
 
 export async function createSeriesAction(_prev: SeriesFormState, formData: FormData): Promise<SeriesFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
-  // ... (createSeriesAction ka purana code same rahega, maine change nahi kiya)
+  
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const shortDesc = (formData.get("shortDesc") as string)?.trim() || null;
@@ -102,8 +128,11 @@ export async function createSeriesAction(_prev: SeriesFormState, formData: FormD
     if (dl1080) downloadOptions.push({ contentId: content.id, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
     if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
 
-    revalidatePath("/admin/series"); revalidatePath("/series"); revalidatePath("/");
-    redirect("/admin/series");
+    revalidatePath("/admin/series"); 
+    revalidatePath("/series"); 
+    revalidatePath("/");
+    
+    return { success: true }; 
   } catch (error) {
     console.error("Create series error:", error);
     return { error: "Failed to create series" };
@@ -111,8 +140,8 @@ export async function createSeriesAction(_prev: SeriesFormState, formData: FormD
 }
 
 export async function updateSeriesAction(seriesId: string, _prev: SeriesFormState, formData: FormData): Promise<SeriesFormState> {
-  // ... (updateSeriesAction ka purana code same rahega)
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const shortDesc = (formData.get("shortDesc") as string)?.trim() || null;
@@ -165,8 +194,12 @@ export async function updateSeriesAction(seriesId: string, _prev: SeriesFormStat
     if (dl1080) downloadOptions.push({ contentId: seriesId, quality: "1080p", fileUrl: dl1080, format: "mp4", isAvailable: true });
     if (downloadOptions.length > 0) await prisma.downloadOption.createMany({ data: downloadOptions });
 
-    revalidatePath("/admin/series"); revalidatePath(`/admin/series/${seriesId}/edit`); revalidatePath("/series"); revalidatePath("/");
-    redirect("/admin/series");
+    revalidatePath("/admin/series"); 
+    revalidatePath(`/admin/series/${seriesId}/edit`); 
+    revalidatePath("/series"); 
+    revalidatePath("/");
+    
+    return { success: true }; 
   } catch (error) {
     console.error("Update series error:", error);
     return { error: "Failed to update series" };
@@ -177,7 +210,8 @@ export async function deleteSeriesAction(seriesId: string) {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
   try {
     await prisma.content.delete({ where: { id: seriesId } });
-    revalidatePath("/admin/series"); revalidatePath("/series");
+    revalidatePath("/admin/series"); 
+    revalidatePath("/series");
     return { success: true };
   } catch (error) { return { error: "Failed to delete series" }; }
 }
@@ -188,8 +222,12 @@ export async function toggleSeriesPublishAction(seriesId: string) {
     const content = await prisma.content.findUnique({ where: { id: seriesId } });
     if (!content) return { error: "Not found" };
     const newStatus = content.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-    await prisma.content.update({ where: { id: seriesId }, data: { status: newStatus, publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt } });
-    revalidatePath("/admin/series"); revalidatePath("/series");
+    await prisma.content.update({ 
+      where: { id: seriesId }, 
+      data: { status: newStatus, publishedAt: newStatus === "PUBLISHED" ? new Date() : content.publishedAt } 
+    });
+    revalidatePath("/admin/series"); 
+    revalidatePath("/series");
     return { success: true, status: newStatus };
   } catch (error) { return { error: "Failed to toggle status" }; }
 }
@@ -198,10 +236,11 @@ export async function getAllGenresForSeriesAdmin() {
   return await prisma.genre.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true } });
 }
 
-// ==================== NAYE FUNCTIONS (SEASONS & EPISODES) ====================
+// ==================== SEASONS & EPISODES ====================
 
 export async function createSeasonAction(seriesId: string, _prev: SeasonFormState, formData: FormData): Promise<SeasonFormState> {
   try { await requireAdminAction(); } catch { return { error: "Unauthorized" }; }
+  
   const seasonNumber = parseInt(formData.get("seasonNumber") as string);
   const title = (formData.get("title") as string)?.trim() || null;
   const description = (formData.get("description") as string)?.trim() || null;
