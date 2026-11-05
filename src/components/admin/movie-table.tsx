@@ -4,10 +4,7 @@ import Link from "next/link";
 import { Edit, Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteConfirm } from "./delete-confirm";
-import {
-  deleteMovieAction,
-  toggleMoviePublishAction, // 👈 Yahan naam change kar diya hai
-} from "@/server/actions/admin/content";
+import { deleteMovieAction } from "@/server/actions/admin/content";
 
 interface Movie {
   id: string;
@@ -28,18 +25,6 @@ export function MovieTable({ movies }: { movies: Movie[] }) {
       </div>
     );
   }
-
-  const handleDelete = async (id: string) => {
-    const res = await deleteMovieAction(id);
-    if (res?.success) toast.success("Movie deleted");
-    else if (res?.error) toast.error(res.error);
-  };
-
-  const handleToggle = async (id: string) => {
-    const res = await toggleMoviePublishAction(id); // 👈 Yeh bhi change kar diya
-    if (res?.success) toast.success("Status updated");
-    else if (res?.error) toast.error(res.error);
-  };
 
   return (
     <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
@@ -73,13 +58,6 @@ export function MovieTable({ movies }: { movies: Movie[] }) {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleToggle(movie.id)}
-                      className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10"
-                      title="Toggle Status"
-                    >
-                      {movie.status === "PUBLISHED" ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
                     <Link
                       href={`/admin/movies/${movie.id}/edit`}
                       className="p-2 text-zinc-400 hover:text-yellow-500 rounded-lg hover:bg-white/10"
@@ -87,11 +65,11 @@ export function MovieTable({ movies }: { movies: Movie[] }) {
                     >
                       <Edit size={16} />
                     </Link>
-                    <DeleteConfirm onConfirm={() => handleDelete(movie.id)}>
-                      <button className="p-2 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-white/10" title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                    </DeleteConfirm>
+                    <DeleteConfirm
+                      itemId={movie.id}
+                      itemTitle={movie.title}
+                      deleteAction={deleteMovieAction} // 👈 Sahi tarah se pass kiya
+                    />
                   </div>
                 </td>
               </tr>
